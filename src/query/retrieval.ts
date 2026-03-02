@@ -180,48 +180,61 @@ async function fetchTopDecks(
   return decks
 }
 
+async function fetchPriceChunk(names: string[]): Promise<{ name: string; usd: number | null; tix: number | null }[]> {
+  const { data, error } = await supabase.from('cards').select('name, usd, tix').in('name', names)
+  if (error) console.warn(`[retrieval] price chunk lookup failed: ${error.message}`)
+  return data ?? []
+}
+
 async function attachDeckCosts(decks: RawDeck[]): Promise<DeckSummary[]> {
   if (decks.length === 0) return decks.map(d => ({ ...d, deck_cost_usd: null, deck_cost_tix: null }))
 
   const allNames = [...new Set(decks.flatMap(d => d.mainboard.map(c => c.name)))]
-  const { data, error } = await supabase
-    .from('cards')
-    .select('name, usd, tix')
-    .in('name', allNames)
+  // Chunk to stay well under PostgREST's ~8KB URL limit
+  const CHUNK = 100
+  const chunks: string[][] = []
+  for (let i = 0; i < allNames.length; i += CHUNK) chunks.push(allNames.slice(i, i + CHUNK))
+  const rows = (await Promise.all(chunks.map(fetchPriceChunk))).flat()
 
-  if (error) console.warn(`[retrieval] attachDeckCosts price lookup failed: ${error.message}`)
+  if (rows.length === 0) console.warn('[retrieval] attachDeckCosts: no price data returned')
 
   const priceMap = new Map<string, { usd: number | null; tix: number | null }>()
-  for (const row of data ?? []) {
+  for (const row of rows) {
     priceMap.set(row.name, { usd: row.usd ?? null, tix: row.tix ?? null })
   }
 
   return decks.map(d => {
-    let usdTotal = 0, tixTotal = 0, usdQty = 0, tixQty = 0, totalQty = 0
+    let usdTotal = 0, tixTotal = 0, usdNames = 0, tixNames = 0
     for (const card of d.mainboard) {
-      totalQty += card.qty
       const p = priceMap.get(card.name)
-      if (p?.usd != null) { usdTotal += card.qty * p.usd; usdQty += card.qty }
-      if (p?.tix != null) { tixTotal += card.qty * p.tix; tixQty += card.qty }
+      if (p?.usd != null) { usdTotal += card.qty * p.usd; usdNames++ }
+      if (p?.tix != null) { tixTotal += card.qty * p.tix; tixNames++ }
     }
-    // Require ≥75% of mainboard cards (by quantity) to have prices before reporting a cost.
-    // Partial coverage produces misleadingly low numbers.
-    const minCoverage = totalQty * 0.75
+    // Require ≥75% of distinct mainboard card names to have prices.
+    // Name-based coverage catches missing expensive cards (e.g. 4x fetch land = 1 name)
+    // better than quantity-based coverage (4 copies counted as 4 of 60 quantities).
+    const minCoverage = d.mainboard.length * 0.75
     return {
       ...d,
-      deck_cost_usd: usdQty >= minCoverage ? Math.round(usdTotal * 100) / 100 : null,
-      deck_cost_tix: tixQty >= minCoverage ? Math.round(tixTotal * 100) / 100 : null,
+      deck_cost_usd: usdNames >= minCoverage ? Math.round(usdTotal * 100) / 100 : null,
+      deck_cost_tix: tixNames >= minCoverage ? Math.round(tixTotal * 100) / 100 : null,
     }
   })
 }
 
 function filterByArchetypeHint(decks: RawDeck[], archetypes: string[]): RawDeck[] {
   const keywords = archetypes.flatMap(a => a.toLowerCase().split(/\s+/))
-  return decks.filter(d =>
-    d.mainboard.some(c =>
-      keywords.some(kw => c.name.toLowerCase().includes(kw))
-    )
+
+  // Match on the labeled archetype name (from deck_archetypes join), not card names.
+  // "Burn" matches decks labeled "Burn" or "Mono-Red Burn"; "Murktide" matches "Izzet Murktide".
+  const labeled = decks.filter(d =>
+    d.archetype && keywords.some(kw => d.archetype!.toLowerCase().includes(kw))
   )
+  if (labeled.length > 0) return labeled
+
+  // No labeled archetypes yet (clustering hasn't run). Return the full list so the
+  // LLM has real context to work with rather than an empty result set.
+  return decks
 }
 
 async function fetchCardInfo(card: string, format: string | null, cutoff: string): Promise<CardInfo | null> {
@@ -230,41 +243,25 @@ async function fetchCardInfo(card: string, format: string | null, cutoff: string
     .select('name, oracle_text, type_line, mana_cost, cmc')
     .ilike('name', card)
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (cardErr || !cardRow) return null
 
-  // Two-step approach: get qualifying tournament IDs, then deck IDs, then count appearances.
-  // Avoids deeply nested PostgREST filter chains.
-  let tourneyQuery = supabase.from('tournaments').select('id').gte('date', cutoff)
-  if (format) tourneyQuery = tourneyQuery.eq('format', format)
-  const { data: tourneys } = await tourneyQuery
-  const tourneyIds = (tourneys ?? []).map(t => t.id)
-
-  if (tourneyIds.length === 0) {
-    return { name: cardRow.name, oracle_text: cardRow.oracle_text, type_line: cardRow.type_line, mana_cost: cardRow.mana_cost, cmc: cardRow.cmc, appearances: 0 }
-  }
-
-  const { data: decks } = await supabase
-    .from('decks')
-    .select('id')
-    .in('tournament_id', tourneyIds)
-    .not('placement', 'is', null)
-    .lte('placement', 32)
-  const deckIds = (decks ?? []).map(d => d.id)
-
-  const { count } = await supabase
-    .from('deck_cards')
-    .select('*', { count: 'exact', head: true })
-    .eq('card_name', cardRow.name)
-    .in('deck_id', deckIds)
+  // count_card_appearances RPC does the join in SQL, avoiding unbounded .in() chains
+  const { data: countData, error: countErr } = await supabase.rpc('count_card_appearances', {
+    p_card_name:      cardRow.name,
+    p_format:         format,
+    p_cutoff:         cutoff,
+    p_max_placement:  32,
+  })
+  if (countErr) console.warn(`[retrieval] count_card_appearances failed: ${countErr.message}`)
 
   return {
-    name: cardRow.name,
+    name:        cardRow.name,
     oracle_text: cardRow.oracle_text,
-    type_line: cardRow.type_line,
-    mana_cost: cardRow.mana_cost,
-    cmc: cardRow.cmc,
-    appearances: count ?? 0,
+    type_line:   cardRow.type_line,
+    mana_cost:   cardRow.mana_cost,
+    cmc:         cardRow.cmc,
+    appearances: (countData as number | null) ?? 0,
   }
 }

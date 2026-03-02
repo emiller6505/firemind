@@ -10,6 +10,8 @@ import { scrapeNewMtggoldfishEvents } from '../scrapers/mtggoldfish.js'
 import { parsePendingMtggoldfishJobs } from '../parsers/mtggoldfish.js'
 import { scrapeNewMtgtop8Events } from '../scrapers/mtgtop8.js'
 import { parsePendingMtgtop8Jobs } from '../parsers/mtgtop8.js'
+import { scrapeNewTopdeckEvents } from '../scrapers/topdeck.js'
+import { parsePendingTopdeckJobs } from '../parsers/topdeck.js'
 
 async function main() {
   console.log(`[scrape] Starting scrape run at ${new Date().toISOString()}`)
@@ -22,6 +24,9 @@ async function main() {
 
   await scrapeNewMtgtop8Events()
   await parsePendingMtgtop8Jobs()
+
+  await scrapeNewTopdeckEvents()
+  await parsePendingTopdeckJobs()
 
   console.log(`[scrape] Scrape run complete at ${new Date().toISOString()}`)
 }

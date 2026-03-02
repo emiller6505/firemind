@@ -27,7 +27,7 @@ class ClaudeProvider implements LLMProvider {
       messages: [{ role: 'user', content: user }],
     })
     const block = msg.content[0]
-    if (block.type !== 'text') throw new Error('Unexpected response type from Claude')
+    if (!block || block.type !== 'text') throw new Error('Unexpected response type from Claude')
     return block.text
   }
 }

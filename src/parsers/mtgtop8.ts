@@ -74,14 +74,15 @@ export function extractTournamentMeta(html: string, sourceUrl: string): Tourname
 
   // MTGTop8 shows dates as "DD/MM/YYYY" in their event headers
   const euDateMatch = html.match(/(\d{2})\/(\d{2})\/(20\d{2})/)
-  let date: string
+  let date: string | null = null
   if (euDateMatch) {
     // DD/MM/YYYY → YYYY-MM-DD
     date = `${euDateMatch[3]}-${euDateMatch[2]}-${euDateMatch[1]}`
   } else {
     const isoMatch = html.match(/20\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])/)
-    date = isoMatch ? isoMatch[0] : new Date().toISOString().split('T')[0]
+    date = isoMatch ? isoMatch[0] : null
   }
+  if (!date) return null  // can't store without a date (column is NOT NULL)
 
   return { name, date, format, eventId }
 }
@@ -273,9 +274,10 @@ async function parseJob(job: { id: number; source_url: string; raw_content: stri
 export async function parsePendingMtgtop8Jobs(): Promise<void> {
   const { data: jobs, error } = await supabase
     .from('scrape_jobs')
-    .select('id, source_url, raw_content')
+    .update({ status: 'in_progress' })
     .eq('source', 'mtgtop8')
     .eq('status', 'pending')
+    .select('id, source_url, raw_content')
     .order('id')
   if (error) throw new Error(`Fetch pending jobs: ${error.message}`)
   if (!jobs?.length) { console.log('[mtgtop8-parser] No pending jobs'); return }

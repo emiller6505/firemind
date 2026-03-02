@@ -75,19 +75,17 @@ export function extractTournamentMeta(html: string, sourceUrl: string): Tourname
   // Extract date — look for ISO date pattern in the HTML
   // MTGGoldfish often shows dates as "2026-02-28" or "Feb 28, 2026"
   const isoMatch = html.match(/20\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])/)
-  let date: string
+  let date: string | null = null
   if (isoMatch) {
     date = isoMatch[0]
   } else {
-    // Fallback: try to parse a natural date near the tournament name
     const naturalMatch = html.match(/(\w{3,9})\s+(\d{1,2}),?\s+(20\d{2})/)
     if (naturalMatch) {
       const d = new Date(`${naturalMatch[1]} ${naturalMatch[2]}, ${naturalMatch[3]}`)
-      date = isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0]
-    } else {
-      date = new Date().toISOString().split('T')[0]
+      if (!isNaN(d.getTime())) date = d.toISOString().split('T')[0]
     }
   }
+  if (!date) return null  // can't store without a date (column is NOT NULL)
 
   return { name, date, format, sourceId }
 }
@@ -265,9 +263,10 @@ async function parseJob(job: { id: number; source_url: string; raw_content: stri
 export async function parsePendingMtggoldfishJobs(): Promise<void> {
   const { data: jobs, error } = await supabase
     .from('scrape_jobs')
-    .select('id, source_url, raw_content')
+    .update({ status: 'in_progress' })
     .eq('source', 'mtggoldfish')
     .eq('status', 'pending')
+    .select('id, source_url, raw_content')
     .order('id')
   if (error) throw new Error(`Fetch pending jobs: ${error.message}`)
   if (!jobs?.length) { console.log('[mtggoldfish-parser] No pending jobs'); return }

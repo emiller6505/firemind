@@ -127,9 +127,10 @@ function inferTier(description: string): string | null {
 export async function parsePendingMtgoJobs(): Promise<void> {
   const { data: jobs, error } = await supabase
     .from('scrape_jobs')
-    .select('id, source_url, raw_content')
+    .update({ status: 'in_progress' })
     .eq('source', 'mtgo')
     .eq('status', 'pending')
+    .select('id, source_url, raw_content')
     .order('id')
   if (error) throw new Error(`Fetch pending jobs: ${error.message}`)
   if (!jobs?.length) { console.log('[mtgo-parser] No pending jobs'); return }
