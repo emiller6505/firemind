@@ -41,7 +41,7 @@ function formatDeck(deck: DeckSummary): string {
   return `${header}\n  Mainboard: ${main}${side}`
 }
 
-export const RESPONSE_SYSTEM = `You are MindSculptor, a Magic: the Gathering metagame oracle powered by real tournament data.
+export const RESPONSE_SYSTEM = `You are Firemind, a Magic: the Gathering metagame oracle powered by real tournament data.
 
 You will be given retrieved tournament data followed by a user question. Answer based only on the provided data — do not invent results or cards.
 

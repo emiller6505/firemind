@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js'
 const BASE_URL = 'https://www.mtggoldfish.com'
 const LISTING_URL = `${BASE_URL}/tournament/results`
 const RATE_LIMIT_MS = 2000
-const USER_AGENT = 'Mozilla/5.0 (compatible; mindsculptor-bot/1.0; +https://github.com/emiller6505/mindsculptor)'
+const USER_AGENT = 'Mozilla/5.0 (compatible; firemind-bot/1.0; +https://github.com/emiller6505/mindsculptor)'
 
 async function fetchText(url: string): Promise<string> {
   const controller = new AbortController()

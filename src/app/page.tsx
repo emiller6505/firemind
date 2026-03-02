@@ -115,7 +115,7 @@ export default function Home() {
     <div className="flex flex-col h-screen max-w-3xl mx-auto">
       {/* Header */}
       <div className="border-b border-gray-800 px-6 py-4 flex-shrink-0">
-        <h1 className="text-lg font-semibold tracking-tight">MindSculptor</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Firemind</h1>
         <p className="text-xs text-gray-500 mt-0.5">MTG metagame oracle · real tournament data</p>
       </div>
 

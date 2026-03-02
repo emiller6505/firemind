@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'MindSculptor',
+  title: 'Firemind',
   description: 'MTG metagame oracle powered by real tournament data',
 }
 

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { supabase } from '../lib/supabase.js'
 
 const BASE_URL = 'https://www.mtggoldfish.com'
-const USER_AGENT = 'Mozilla/5.0 (compatible; mindsculptor-bot/1.0; +https://github.com/emiller6505/mindsculptor)'
+const USER_AGENT = 'Mozilla/5.0 (compatible; firemind-bot/1.0; +https://github.com/emiller6505/mindsculptor)'
 const RATE_LIMIT_MS = 1500
 const MAX_DECK_FETCH = 32  // only fetch top 32 deck lists
 

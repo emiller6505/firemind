@@ -74,6 +74,6 @@ describe('handleQuery (full pipeline)', () => {
     await handleQuery('test')
 
     const [systemMsg] = vi.mocked(llm.complete).mock.calls[0]
-    expect(systemMsg).toContain('MindSculptor')
+    expect(systemMsg).toContain('Firemind')
   })
 })
