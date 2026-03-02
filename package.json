@@ -12,6 +12,7 @@
     "parse": "tsx src/scripts/run-parser.ts",
     "query": "tsx src/scripts/test-query.ts",
     "cluster": "tsx src/scripts/run-cluster.ts",
+    "cluster:manage": "tsx src/scripts/cluster-manage.ts",
     "snapshot": "tsx src/scripts/run-snapshot.ts",
     "embed": "tsx src/scripts/run-embed.ts",
     "test": "vitest run",
