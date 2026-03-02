@@ -8,6 +8,8 @@ This directory tracks product decisions for Firemind — an MTG metagame oracle.
 - `tiers.md` — business model, feature gating, pricing rationale
 - `information-architecture.md` — page structure, navigation, user flows
 - `alerts.md` — MTGO alert and digest system design
+- `charts.md` — data section chart specs, rationale, and priority order
+- `roadmap.md` — MVP definition and ranked post-MVP priorities
 
 ## Core Concept
 

@@ -86,6 +86,15 @@ Long-term retention mechanic — users accumulate a research trail they don't wa
 
 ### Tier 2 — next quarter
 
+**Meta diversity index**
+Single line over time showing format health via Shannon entropy on meta share.
+"Is Modern healthy right now?" — a question that ranks on Google and feeds oracle
+commentary. MTGGoldfish doesn't have this. See `charts.md`.
+
+**Card frequency breakdown**
+Per-archetype view of which cards are core vs flex across all registered lists.
+Useful for players tuning their build. See `charts.md`.
+
 **Public meta reports (`/reports/[format]-[date]`)**
 The weekly digest email published as a public SSR page. Fully indexed by Google.
 SEO compound value over time — each report is a permanent, rankable page.
