@@ -5,8 +5,8 @@
 Primary channels: Reddit, Meta ads (Facebook/Instagram), SEO. Podcasts post-MVP.
 
 **Engineering implications:**
-- Metagame section (`/metagame/**`) must be **public and SSR** — fully crawlable, no auth required
-- Oracle section (`/oracle`) requires auth to use but landing at `/` is public
+- Metagame section (`/data/**`) must be **public and SSR** — fully crawlable, no auth required
+- Oracle section (`/chat`) requires auth to use but landing at `/` is public
 - Dynamic OG images via `@vercel/og` on archetype and format pages
 - Shareable oracle result permalinks for Reddit/social virality
 - `/reports/[format]-[date]` — weekly digest as public indexed pages
@@ -17,11 +17,11 @@ Primary channels: Reddit, Meta ads (Facebook/Instagram), SEO. Podcasts post-MVP.
 
 ## Two sections
 
-### 1. Oracle (`/oracle`)
+### 1. Oracle (`/chat`)
 Chat-first AI analysis. The core product and the primary paywall surface.
 Format is conversational context here, not a persistent filter.
 
-### 2. Metagame (`/metagame`)
+### 2. Metagame (`/data`)
 Data visualization: charts, trends, archetype breakdowns. Fully free.
 CTAs throughout funnel users into the oracle.
 
@@ -69,13 +69,13 @@ Murktide  18.4% ↑   Amulet 13.1% →   Domain 21% ↑↑ ...
 
 ---
 
-### `/oracle` — The Firemind
+### `/chat` — The Firemind
 
 Full-width chat interface. The oracle is the product.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  ⚡ Firemind    [Oracle] [Metagame]       [🕐][🔔][  ]  │
+│  ⚡ Firemind    [Chat] [Data]       [🕐][🔔][  ]  │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │              What would you like to know?               │
@@ -95,7 +95,7 @@ Full-width chat interface. The oracle is the product.
 
 - Query counter inline with input: "5 / 5 queries today" (Casual) or "22 / 30" (Spike)
 - Unauthenticated users can see the interface but must sign in to query
-- Oracle responses embed inline data cards — archetype names are tappable links to `/metagame/[format]/[archetype]`
+- Oracle responses embed inline data cards — archetype names are tappable links to `/data/[format]/[archetype]`
 - Spike CTA appears when Casual hits query limit: "You're out of queries — upgrade for 30/day"
 
 **Oracle response format:**
@@ -122,19 +122,19 @@ Archetype names in responses link directly to metagame archetype pages.
 
 ---
 
-### `/metagame` — Format selector
+### `/data` — Format selector
 
 Redirect or simple landing: choose Standard or Modern. On desktop, could default to Modern.
 
 ---
 
-### `/metagame/[format]` — Format overview
+### `/data/[format]` — Format overview
 
 Public, SSR, fully crawlable.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  ⚡ Firemind    [Oracle] [Metagame]       [🔔][  ]      │
+│  ⚡ Firemind    [Chat] [Data]       [🔔][  ]      │
 ├─────────────────────────────────────────────────────────┤
 │  Modern Metagame          [7d ▾]  [Meta share ▾]        │
 │                                                         │
@@ -154,13 +154,13 @@ Public, SSR, fully crawlable.
 ```
 
 - Filters: time range (7d / 30d / 90d / all), sort by meta share or win rate
-- Archetype rows are tappable → `/metagame/[format]/[archetype]`
+- Archetype rows are tappable → `/data/[format]/[archetype]`
 - Oracle summary card at bottom: cached synthesis, CTA to oracle
 - OG image: "Modern Metagame — [date]" with top 3 archetypes
 
 ---
 
-### `/metagame/[format]/[archetype]` — Archetype detail
+### `/data/[format]/[archetype]` — Archetype detail
 
 Public, SSR, fully crawlable. The main SEO surface and conversion page.
 
@@ -201,7 +201,7 @@ Same content as the Spike email digest. Canonical URL included in the digest ema
 
 ---
 
-### `/oracle/results/[id]` — Shareable oracle result
+### `/chat/results/[id]` — Shareable oracle result
 
 Public permalink to a single oracle response (not a full conversation).
 Shows: the query, the response, archetype/format context, timestamp.

@@ -1,2 +1,2 @@
-# mindsculptor
-A magic oracle
+# Firemind
+A Magic: the Gathering metagame oracle.

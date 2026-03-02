@@ -1,8 +1,52 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import type { Components } from 'react-markdown'
+
+function CodeBlock({ children }: { children: string }) {
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const copy = useCallback(() => {
+    navigator.clipboard.writeText(children).then(() => {
+      setCopied(true)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setCopied(false), 2000)
+    })
+  }, [children])
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
+
+  return (
+    <div className="relative group my-3">
+      <pre className="bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-sm text-gray-300 font-mono overflow-x-auto whitespace-pre">
+        {children}
+      </pre>
+      <button
+        onClick={copy}
+        className="absolute top-2 right-2 text-xs text-gray-500 hover:text-gray-300 bg-gray-900 border border-gray-700 rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  )
+}
+
+const mdComponents: Components = {
+  code({ className, children, ...props }) {
+    // Multiline content = fenced block; single-line = inline code
+    if (String(children).trim().includes('\n')) {
+      return <CodeBlock>{String(children).replace(/\n$/, '')}</CodeBlock>
+    }
+    return (
+      <code className="text-indigo-300 bg-gray-900 px-1 rounded text-sm font-mono" {...props}>
+        {children}
+      </code>
+    )
+  },
+}
 
 interface Message {
   role: 'user' | 'oracle'
@@ -69,7 +113,6 @@ export default function Home() {
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
         {messages.length === 0 && (
           <div className="text-center text-gray-600 mt-24 space-y-2">
-            <p className="text-2xl">🧠</p>
             <p className="text-sm">Ask about the current metagame, what to play, or how cards perform.</p>
             <p className="text-xs text-gray-700">e.g. "What are the best Modern decks right now?" or "How does Burn match up against Tron?"</p>
           </div>
@@ -91,7 +134,7 @@ export default function Home() {
                   prose-li:my-0.5
                   prose-table:text-sm prose-th:text-gray-300 prose-td:text-gray-400
                   prose-code:text-indigo-300 prose-code:bg-gray-900 prose-code:px-1 prose-code:rounded">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{msg.content}</ReactMarkdown>
                 </div>
                 {msg.meta && (
                   <p className="text-xs text-gray-600">

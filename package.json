@@ -11,6 +11,8 @@
     "scrape": "tsx src/workers/scrape.ts",
     "parse": "tsx src/scripts/run-parser.ts",
     "query": "tsx src/scripts/test-query.ts",
+    "cluster": "tsx src/scripts/run-cluster.ts",
+    "snapshot": "tsx src/scripts/run-snapshot.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

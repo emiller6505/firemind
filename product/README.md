@@ -1,6 +1,6 @@
 # Product Planning
 
-This directory tracks product decisions for MindSculptor — an MTG metagame oracle.
+This directory tracks product decisions for Firemind — an MTG metagame oracle.
 
 ## Files
 

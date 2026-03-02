@@ -38,13 +38,13 @@ The free half of the product. SEO flywheel, acquisition surface, and conversion 
 into the oracle. All charts are public, SSR, no auth required.
 
 **Includes:**
-- `/metagame/[format]` — format overview: archetype breakdown chart, filterable by time
+- `/data/[format]` — format overview: archetype breakdown chart, filterable by time
   range (7d / 30d / 90d), sortable by meta share or win rate
-- `/metagame/[format]/[archetype]` — archetype detail: trend charts, win rate over time,
+- `/data/[format]/[archetype]` — archetype detail: trend charts, win rate over time,
   recent MTGO results, and oracle CTA cluster
 - Oracle CTAs on every archetype page: free "Ask the Firemind" + Spike-only
   "Generate deck list" and "Sideboard plan vs the field"
-- `/oracle/results/[id]` — shareable single-response permalinks for Reddit/social
+- `/chat/results/[id]` — shareable single-response permalinks for Reddit/social
 - Dynamic OG images via `@vercel/og` (archetype name, meta %, trend arrow)
 - Sitemap covering all metagame pages
 - All content in real HTML — indexable by Google

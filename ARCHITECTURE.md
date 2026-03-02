@@ -1,4 +1,4 @@
-# MindSculptor — Architecture
+# Firemind — Architecture
 
 ## What It Is
 A Magic: the Gathering metagame oracle. Aggregates tournament results, derives opinions backed by data, and answers questions ranging from "what should I play as a beginner" to "build me the most competitive Modern deck from the last 3 months."

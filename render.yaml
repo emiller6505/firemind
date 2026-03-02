@@ -48,3 +48,20 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+
+  - type: cron
+    name: cluster-archetypes
+    runtime: node
+    plan: starter
+    schedule: "30 */12 * * *"     # 30min after scrape-mtgo, every 12 hours
+    buildCommand: npm install
+    startCommand: npm run cluster
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

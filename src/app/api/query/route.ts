@@ -6,6 +6,9 @@ export async function POST(req: NextRequest) {
   if (!body?.query || typeof body.query !== 'string') {
     return NextResponse.json({ error: 'query string is required' }, { status: 400 })
   }
+  if (body.query.length > 1000) {
+    return NextResponse.json({ error: 'query too long (max 1000 chars)' }, { status: 400 })
+  }
 
   try {
     const result = await handleQuery(body.query)
