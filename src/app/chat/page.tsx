@@ -103,7 +103,7 @@ function OracleThinking() {
       </div>
       <div className="oracle-border pl-4 py-3 flex items-center gap-2">
         <span className="text-sm text-ash italic">{THINKING_QUIPS[quipIdx]}</span>
-        <span className="flex gap-1">
+        <span className="flex gap-1 self-end mb-0.5">
           <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:0ms]" />
           <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:150ms]" />
           <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:300ms]" />
