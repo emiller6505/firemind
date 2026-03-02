@@ -96,21 +96,18 @@ async function parseJob(job: { id: number; source_url: string; raw_content: stri
       }, { onConflict: 'id' })
     if (dErr) throw new Error(`Deck upsert: ${dErr.message}`)
 
-    // Delete existing deck_cards (re-insert on re-parse)
-    await supabase.from('deck_cards').delete().eq('deck_id', deckId)
-
     const deckCardRows = [...mainboard, ...sideboard].map(c => ({
-      deck_id:     deckId,
-      card_name:   c.card_attributes.card_name,
-      card_id:     cardIdMap.get(c.card_attributes.card_name) ?? null,
-      quantity:    Number(c.qty),
+      card_name:    c.card_attributes.card_name,
+      card_id:      cardIdMap.get(c.card_attributes.card_name) ?? null,
+      quantity:     Number(c.qty),
       is_sideboard: c.sideboard === 'true',
     }))
 
-    if (deckCardRows.length > 0) {
-      const { error: dcErr } = await supabase.from('deck_cards').insert(deckCardRows)
-      if (dcErr) throw new Error(`Deck cards insert: ${dcErr.message}`)
-    }
+    const { error: dcErr } = await supabase.rpc('sync_deck_cards', {
+      p_deck_id: deckId,
+      p_rows:    deckCardRows,
+    })
+    if (dcErr) throw new Error(`Deck cards sync: ${dcErr.message}`)
   }
 }
 

@@ -252,20 +252,19 @@ async function parseJob(job: { id: number; source_url: string; raw_content: stri
       }, { onConflict: 'id' })
     if (dErr) throw new Error(`Deck upsert: ${dErr.message}`)
 
-    await supabase.from('deck_cards').delete().eq('deck_id', deckId)
-
     const allCards = [...rawList.mainboard, ...rawList.sideboard]
     const cardIdMap = await resolveCardIds(allCards.map(c => c.name))
 
     const deckCardRows = [
-      ...rawList.mainboard.map(c => ({ deck_id: deckId, card_name: c.name, card_id: cardIdMap.get(c.name) ?? null, quantity: c.qty, is_sideboard: false })),
-      ...rawList.sideboard.map(c => ({ deck_id: deckId, card_name: c.name, card_id: cardIdMap.get(c.name) ?? null, quantity: c.qty, is_sideboard: true })),
+      ...rawList.mainboard.map(c => ({ card_name: c.name, card_id: cardIdMap.get(c.name) ?? null, quantity: c.qty, is_sideboard: false })),
+      ...rawList.sideboard.map(c => ({ card_name: c.name, card_id: cardIdMap.get(c.name) ?? null, quantity: c.qty, is_sideboard: true })),
     ]
 
-    if (deckCardRows.length > 0) {
-      const { error: dcErr } = await supabase.from('deck_cards').insert(deckCardRows)
-      if (dcErr) throw new Error(`Deck cards insert: ${dcErr.message}`)
-    }
+    const { error: dcErr } = await supabase.rpc('sync_deck_cards', {
+      p_deck_id: deckId,
+      p_rows:    deckCardRows,
+    })
+    if (dcErr) throw new Error(`Deck cards sync: ${dcErr.message}`)
 
     if (i < standings.length - 1) await sleep(RATE_LIMIT_MS)
   }

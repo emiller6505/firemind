@@ -6,7 +6,7 @@ const MODEL = 'voyage-3'
 const BATCH_SIZE = 64
 
 export async function embedArchetypes(format?: string): Promise<void> {
-  let query = supabase.from('archetypes').select('id, name, format, key_cards, description')
+  let query = supabase.from('archetypes').select('id, name, format, key_cards, description, updated_at')
   if (format) query = query.eq('format', format)
 
   const { data, error } = await query

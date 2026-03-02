@@ -6,6 +6,7 @@ const CENTROID_MIN_FREQ = 0.5      // card must appear in ≥50% of members to b
 const MAX_REFINEMENT_ITERS = 10
 const MIN_CLUSTER_SIZE = 2
 const DEFAULT_WINDOW_DAYS = 90
+const LLM_LABEL_DELAY_MS = 500    // pause between LLM archetype label calls to avoid rate limits
 
 interface DeckRecord {
   id: string
@@ -130,7 +131,9 @@ export async function clusterArchetypes(format: string, windowDays = DEFAULT_WIN
     .in('deck_id', deckIds)
     .eq('method', 'jaccard')
 
-  for (const cluster of viable) {
+  for (let i = 0; i < viable.length; i++) {
+    if (i > 0) await new Promise(resolve => setTimeout(resolve, LLM_LABEL_DELAY_MS))
+    const cluster = viable[i]
     const archetypeId = await labelAndUpsertArchetype(cluster, format)
     if (!archetypeId) continue
 
