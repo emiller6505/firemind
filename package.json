@@ -25,7 +25,6 @@
   "devDependencies": {
     "@types/node": "^25.3.3",
     "@types/stream-json": "^1.7.8",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
@@ -34,6 +33,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "dotenv": "^17.3.1",
     "playwright": "^1.58.2",
-    "stream-json": "^1.9.1"
+    "stream-json": "^1.9.1",
+    "tsx": "^4.21.0"
   }
 }
