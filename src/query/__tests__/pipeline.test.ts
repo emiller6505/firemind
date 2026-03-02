@@ -4,6 +4,7 @@ import { INTENT_FIXTURE, DECK_SUMMARY_FIXTURE } from './helpers.js'
 vi.mock('../../lib/llm.js', () => ({ llm: { complete: vi.fn() } }))
 vi.mock('../intent.js', () => ({ extractIntent: vi.fn() }))
 vi.mock('../retrieval.js', () => ({ retrieveContext: vi.fn() }))
+vi.mock('../../lib/query-cache.js', () => ({ cacheGet: vi.fn().mockReturnValue(null), cacheSet: vi.fn() }))
 
 import { llm } from '../../lib/llm.js'
 import { extractIntent } from '../intent.js'
