@@ -1,5 +1,5 @@
 {
-  "name": "mindsculptor",
+  "name": "firemind",
   "version": "1.0.0",
   "description": "A magic oracle",
   "type": "module",
@@ -19,15 +19,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/emiller6505/mindsculptor.git"
+    "url": "git+https://github.com/emiller6505/firemind.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/emiller6505/mindsculptor/issues"
+    "url": "https://github.com/emiller6505/firemind/issues"
   },
-  "homepage": "https://github.com/emiller6505/mindsculptor#readme",
+  "homepage": "https://github.com/emiller6505/firemind#readme",
   "devDependencies": {
     "@types/node": "^25.3.3",
     "@types/react": "^19.2.14",

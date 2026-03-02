@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js'
 const LISTING_URL = 'https://www.mtgo.com/decklists'
 const BASE_URL = 'https://www.mtgo.com'
 const RATE_LIMIT_MS = 1500
-const USER_AGENT = 'Mozilla/5.0 (compatible; firemind-bot/1.0; +https://github.com/emiller6505/mindsculptor)'
+const USER_AGENT = 'Mozilla/5.0 (compatible; firemind-bot/1.0; +https://github.com/emiller6505/firemind)'
 
 export const FORMAT_MAP: Record<string, string> = {
   CMODERN:   'modern',

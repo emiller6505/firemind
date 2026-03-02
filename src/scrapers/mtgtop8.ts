@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase.js'
 
 const BASE_URL = 'https://www.mtgtop8.com'
 const RATE_LIMIT_MS = 2000
-const USER_AGENT = 'Mozilla/5.0 (compatible; firemind-bot/1.0; +https://github.com/emiller6505/mindsculptor)'
+const USER_AGENT = 'Mozilla/5.0 (compatible; firemind-bot/1.0; +https://github.com/emiller6505/firemind)'
 
 const FORMAT_PAGES: { url: string; format: string }[] = [
   { url: `${BASE_URL}/format?f=MO`, format: 'modern' },
