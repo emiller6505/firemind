@@ -75,6 +75,44 @@ interface Message {
   }
 }
 
+const THINKING_QUIPS = [
+  'The Firemind is considering',
+  'The Firemind is brainstorming',
+  'The Firemind is preordaining',
+  'The Firemind is pondering',
+  'The Firemind is surveilling',
+  'The Firemind is scrying',
+  'The Firemind is consulting the serum visions',
+  'The Firemind is peering through the aether',
+  'The Firemind is opting',
+]
+
+function OracleThinking() {
+  const [quipIdx, setQuipIdx] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setQuipIdx(i => (i + 1) % THINKING_QUIPS.length), 2500)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="text-spark text-xs">⚡</span>
+        <span className="text-xs font-medium text-copper tracking-wide uppercase">Firemind</span>
+      </div>
+      <div className="oracle-border pl-4 py-3 flex items-center gap-2">
+        <span className="text-sm text-ash italic">{THINKING_QUIPS[quipIdx]}</span>
+        <span className="flex gap-1">
+          <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:0ms]" />
+          <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:150ms]" />
+          <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:300ms]" />
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function ChatPageInner() {
   const searchParams = useSearchParams()
   const [messages, setMessages] = useState<Message[]>([])
@@ -217,21 +255,7 @@ function ChatPageInner() {
             </div>
           ))}
 
-          {loading && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-spark text-xs">⚡</span>
-                <span className="text-xs font-medium text-copper tracking-wide uppercase">Firemind</span>
-              </div>
-              <div className="oracle-border pl-4 py-3">
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:300ms]" />
-                </div>
-              </div>
-            </div>
-          )}
+          {loading && <OracleThinking />}
 
           <div ref={bottomRef} />
         </div>

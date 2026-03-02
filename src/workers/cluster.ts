@@ -199,8 +199,15 @@ async function labelAndUpsertArchetype(cluster: Cluster, format: string): Promis
   const cardList = topCards.map(c => `${c.name} (${Math.round(c.freq * 100)}%)`).join(', ')
 
   const raw = await llm.complete(
-    `You are labeling Magic: the Gathering archetypes. Given the most common mainboard cards from a cluster of ${format} decks, return ONLY the canonical archetype name — nothing else. Examples: "Izzet Murktide", "Mono-Red Burn", "Amulet Titan", "Eldrazi Ramp". No explanation, no punctuation, no quotes.`,
-    `${format} cluster. Top mainboard cards: ${cardList}`,
+    `You are labeling Magic: the Gathering archetypes for competitive tournament data. Given the most common mainboard cards from a cluster of ${format} decks, return ONLY the canonical archetype name — nothing else. No explanation, no punctuation, no quotes.
+
+Rules:
+- Use the name competitive players actually use, not a description of the cards.
+- Use guild/shard names for color identity (Boros = red/white, Izzet = blue/red, Grixis = blue/black/red, etc.).
+- Name after the deck's strategy or engine, not individual card names or creature types embedded in card titles. For example, a red/white deck running Ajani Nacatl Pariah should be named for its strategy (e.g. "Boros Energy", "Boros Burn") — not "Nacatl", which implies a green creature type.
+- Prefer mechanic or engine names when clear: Energy, Reanimator, Ramp, Affinity, Burn, Control.
+- Examples: "Izzet Murktide", "Mono-Red Burn", "Amulet Titan", "Eldrazi Ramp", "Boros Energy", "Domain Zoo", "Living End".`,
+    `${format} cluster. Top mainboard cards (name: frequency): ${cardList}`,
     { maxTokens: 32, temperature: 0 },
   )
 
