@@ -64,10 +64,11 @@ async function parseJob(job: { id: number; source_url: string; raw_content: stri
     (data.standings ?? []).map(s => [s.login_name, parseInt(s.rank, 10)])
   )
 
-  // Collect all card names we'll need to resolve
-  const allCardNames = data.decklists.flatMap(d =>
-    d.main_deck.map(c => c.card_attributes.card_name)
-  )
+  // Collect all card names we'll need to resolve (mainboard + sideboard)
+  const allCardNames = data.decklists.flatMap(d => [
+    ...d.main_deck.map(c => c.card_attributes.card_name),
+    ...(d.sideboard_deck ?? []).map(c => c.card_attributes.card_name),
+  ])
   const cardIdMap = await resolveCardIds(allCardNames)
 
   // ── Decks + deck_cards ────────────────────────────────────────────────────
