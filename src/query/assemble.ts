@@ -39,7 +39,7 @@ function formatDeck(deck: DeckSummary): string {
   const main = deck.mainboard.map(c => `${c.qty}x ${c.name}`).join(', ')
   const side = deck.sideboard.length > 0
     ? `\n  Sideboard: ${deck.sideboard.map(c => `${c.qty}x ${c.name}`).join(', ')}`
-    : ''
+    : `\n  Sideboard: [not available for this source]`
   return `${header}\n  Mainboard: ${main}${side}`
 }
 
@@ -62,6 +62,7 @@ Guidelines:
     Sideboard:
     2 Leyline of Sanctity
     \`\`\`
+- Sideboard data is only available for some sources. If a deck's sideboard shows "[not available for this source]", omit the Sideboard section entirely and note that sideboard data is not published by that source. Never invent sideboard cards.
 - If the data is sparse or the question is outside the available data window, say so explicitly.
 - Do not fabricate cards, placements, or results.
 - Do not use emojis.

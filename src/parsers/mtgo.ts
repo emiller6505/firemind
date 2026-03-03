@@ -75,8 +75,8 @@ async function parseJob(job: { id: number; source_url: string; raw_content: stri
     const deckId = stableId('mtgo', data.event_id, mtgoDeck.decktournamentid)
     const placement = rankByPlayer.get(mtgoDeck.player) ?? null
 
-    const mainboard = mtgoDeck.main_deck.filter(c => c.sideboard !== 'true')
-    const sideboard = mtgoDeck.main_deck.filter(c => c.sideboard === 'true')
+    const mainboard = mtgoDeck.main_deck
+    const sideboard = mtgoDeck.sideboard_deck ?? []
 
     const rawList = {
       mainboard: mainboard.map(c => ({ name: c.card_attributes.card_name, qty: Number(c.qty) })),
@@ -96,12 +96,10 @@ async function parseJob(job: { id: number; source_url: string; raw_content: stri
       }, { onConflict: 'id' })
     if (dErr) throw new Error(`Deck upsert: ${dErr.message}`)
 
-    const deckCardRows = [...mainboard, ...sideboard].map(c => ({
-      card_name:    c.card_attributes.card_name,
-      card_id:      cardIdMap.get(c.card_attributes.card_name) ?? null,
-      quantity:     Number(c.qty),
-      is_sideboard: c.sideboard === 'true',
-    }))
+    const deckCardRows = [
+      ...mainboard.map(c => ({ card_name: c.card_attributes.card_name, card_id: cardIdMap.get(c.card_attributes.card_name) ?? null, quantity: Number(c.qty), is_sideboard: false })),
+      ...sideboard.map(c => ({ card_name: c.card_attributes.card_name, card_id: cardIdMap.get(c.card_attributes.card_name) ?? null, quantity: Number(c.qty), is_sideboard: true })),
+    ]
 
     const { error: dcErr } = await supabase.rpc('sync_deck_cards', {
       p_deck_id: deckId,

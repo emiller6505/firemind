@@ -194,20 +194,40 @@ function clusterCardFrequency(cluster: Cluster): { name: string; freq: number }[
     .slice(0, 15)
 }
 
+// Derive actual color identity from mana_cost DB data so the LLM label doesn't
+// have to guess colors from card name associations (e.g. Springleaf Drum ≠ blue).
+async function deriveColorIdentity(cardNames: string[]): Promise<string> {
+  const { data } = await supabase.from('cards').select('mana_cost').in('name', cardNames)
+  const colors = new Set<string>()
+  for (const row of data ?? []) {
+    for (const m of (row.mana_cost ?? '').matchAll(/[WUBRG]/g)) colors.add(m[0])
+  }
+  if (colors.size === 0) return 'Colorless'
+  const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G']
+  const sorted = COLOR_ORDER.filter(c => colors.has(c))
+  if (sorted.length === 1) {
+    const full: Record<string, string> = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' }
+    return `Mono-${full[sorted[0]]}`
+  }
+  return sorted.join('')
+}
+
 async function labelAndUpsertArchetype(cluster: Cluster, format: string): Promise<string | null> {
   const topCards = clusterCardFrequency(cluster)
   const cardList = topCards.map(c => `${c.name} (${Math.round(c.freq * 100)}%)`).join(', ')
+  const colorIdentity = await deriveColorIdentity(topCards.map(c => c.name))
 
   const raw = await llm.complete(
-    `You are labeling Magic: the Gathering archetypes for competitive tournament data. Given the most common mainboard cards from a cluster of ${format} decks, return ONLY the canonical archetype name — nothing else. No explanation, no punctuation, no quotes.
+    `You are labeling Magic: the Gathering archetypes for competitive tournament data. Given the most common mainboard cards and confirmed color identity from a cluster of ${format} decks, return ONLY the canonical archetype name — nothing else. No explanation, no punctuation, no quotes.
 
 Rules:
 - Use the name competitive players actually use, not a description of the cards.
-- Use guild/shard names for color identity (Boros = red/white, Izzet = blue/red, Grixis = blue/black/red, etc.).
-- Name after the deck's strategy or engine, not individual card names or creature types embedded in card titles. For example, a red/white deck running Ajani Nacatl Pariah should be named for its strategy (e.g. "Boros Energy", "Boros Burn") — not "Nacatl", which implies a green creature type.
+- Use the provided color identity — do NOT infer colors from card names or historic deck associations.
+- Use guild/shard names for the provided colors (Boros = WR, Izzet = UR, Grixis = UBR, Azorius = WU, etc.).
+- Name after the deck's strategy or engine, not individual card names or creature types embedded in card titles.
 - Prefer mechanic or engine names when clear: Energy, Reanimator, Ramp, Affinity, Burn, Control.
 - Examples: "Izzet Murktide", "Mono-Red Burn", "Amulet Titan", "Eldrazi Ramp", "Boros Energy", "Domain Zoo", "Living End".`,
-    `${format} cluster. Top mainboard cards (name: frequency): ${cardList}`,
+    `${format} cluster. Color identity: ${colorIdentity}. Top mainboard cards (name: frequency): ${cardList}`,
     { maxTokens: 32, temperature: 0 },
   )
 

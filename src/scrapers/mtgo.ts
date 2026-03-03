@@ -27,6 +27,7 @@ export interface MtgoDeck {
   player: string
   decktournamentid: string
   main_deck: MtgoCard[]
+  sideboard_deck: MtgoCard[]
 }
 
 export interface MtgoStanding {
