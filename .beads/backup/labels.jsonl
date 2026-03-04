@@ -4,7 +4,11 @@
 {"issue_id":"mindsculptor-1ub","label":"infra"}
 {"issue_id":"mindsculptor-4ao","label":"design"}
 {"issue_id":"mindsculptor-4mm","label":"design"}
+{"issue_id":"mindsculptor-4zs","label":"design"}
+{"issue_id":"mindsculptor-4zs","label":"frontend"}
 {"issue_id":"mindsculptor-54y","label":"design"}
+{"issue_id":"mindsculptor-5ae","label":"design"}
+{"issue_id":"mindsculptor-5ae","label":"frontend"}
 {"issue_id":"mindsculptor-7hu","label":"design"}
 {"issue_id":"mindsculptor-803","label":"backend"}
 {"issue_id":"mindsculptor-803","label":"data"}
@@ -38,6 +42,7 @@
 {"issue_id":"mindsculptor-toy.7","label":"ux"}
 {"issue_id":"mindsculptor-toy.8","label":"frontend"}
 {"issue_id":"mindsculptor-toy.8","label":"ux"}
+{"issue_id":"mindsculptor-usx","label":"frontend"}
 {"issue_id":"mindsculptor-v2t","label":"backend"}
 {"issue_id":"mindsculptor-v2t","label":"data"}
 {"issue_id":"mindsculptor-vos","label":"backend"}
