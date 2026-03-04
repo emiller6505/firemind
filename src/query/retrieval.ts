@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import type { Trace } from '../lib/trace'
 import type { Intent } from './intent'
 
 // Voyage embeddings are optional — only used if VOYAGE_API_KEY is set
@@ -52,21 +53,25 @@ export interface RetrievedData {
   confidence: 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY HIGH'
 }
 
-export async function retrieveContext(intent: Intent): Promise<RetrievedData> {
+export async function retrieveContext(intent: Intent, trace?: Trace): Promise<RetrievedData> {
   const window_days = intent.timeframe_days
   const cutoff = new Date(Date.now() - window_days * 86_400_000).toISOString().split('T')[0]
+
+  const time = trace
+    ? <T>(name: string, fn: () => Promise<T>) => trace.time(name, fn)
+    : <T>(_: string, fn: () => Promise<T>) => fn()
 
   // For "against X" queries, fetch X's decklists so the LLM knows what threats to answer
   const archetypeForRetrieval = intent.archetype ?? intent.opponent_archetype
   const [rawDecks, cardInfo] = await Promise.all([
-    fetchTopDecks(intent.format, cutoff, archetypeForRetrieval, intent.archetype_b),
-    intent.card ? fetchCardInfo(intent.card, intent.format, cutoff) : Promise.resolve(null),
+    time('fetchTopDecks', () => fetchTopDecks(intent.format, cutoff, archetypeForRetrieval, intent.archetype_b)),
+    time('fetchCardInfo', () => intent.card ? fetchCardInfo(intent.card, intent.format, cutoff) : Promise.resolve(null)),
   ])
 
   const tournaments_count = new Set(rawDecks.map(d => d.tournament_name)).size
   const [topDecks, confidence] = await Promise.all([
-    attachDeckCosts(rawDecks),
-    resolveConfidence(intent.format, cutoff, rawDecks.length),
+    time('attachDeckCosts', () => attachDeckCosts(rawDecks)),
+    time('resolveConfidence', () => resolveConfidence(intent.format, cutoff, rawDecks.length)),
   ])
 
   return { format: intent.format, window_days, tournaments_count, top_decks: topDecks, card_info: cardInfo, confidence }

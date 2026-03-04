@@ -47,7 +47,7 @@ describe('handleQuery (full pipeline)', () => {
   it('passes the extracted intent to retrieveContext', async () => {
     await handleQuery('test')
 
-    expect(retrieveContext).toHaveBeenCalledWith(INTENT_FIXTURE)
+    expect(retrieveContext).toHaveBeenCalledWith(INTENT_FIXTURE, expect.anything())
   })
 
   it('calls llm.complete exactly once for the final response', async () => {
