@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { INTENT_FIXTURE, DECK_SUMMARY_FIXTURE } from './helpers.js'
+import { INTENT_FIXTURE, DECK_SUMMARY_FIXTURE, ARTICLE_CHUNK_FIXTURE } from './helpers.js'
 
 vi.mock('../../lib/llm.js', () => ({ llm: { complete: vi.fn(), completeWithHistory: vi.fn(), completeStream: vi.fn(), completeStreamWithHistory: vi.fn() } }))
 vi.mock('../intent.js', () => ({ extractIntent: vi.fn() }))
@@ -18,6 +18,7 @@ const RETRIEVED_DATA = {
   top_decks: [DECK_SUMMARY_FIXTURE],
   card_info: null,
   card_glossary: [],
+  article_chunks: [],
   confidence: 'HIGH' as const,
 }
 
@@ -118,5 +119,38 @@ describe('handleQuery with history', () => {
 
     expect(llm.complete).toHaveBeenCalledTimes(1)
     expect(llm.completeWithHistory).not.toHaveBeenCalled()
+  })
+})
+
+describe('handleQuery with article chunks', () => {
+  it('includes Expert Analysis in LLM user message when article_chunks present', async () => {
+    vi.mocked(retrieveContext).mockResolvedValue({
+      ...RETRIEVED_DATA,
+      article_chunks: [ARTICLE_CHUNK_FIXTURE],
+    })
+
+    await handleQuery('How is Burn positioned?')
+
+    const [, userMsg] = vi.mocked(llm.complete).mock.calls[0]
+    expect(userMsg).toContain('=== Expert Analysis ===')
+    expect(userMsg).toContain('Sideboard Guide: Modern Burn')
+    expect(userMsg).toContain('Frank Karsten')
+  })
+
+  it('omits Expert Analysis when article_chunks is empty', async () => {
+    vi.mocked(retrieveContext).mockResolvedValue(RETRIEVED_DATA)
+
+    await handleQuery('test')
+
+    const [, userMsg] = vi.mocked(llm.complete).mock.calls[0]
+    expect(userMsg).not.toContain('Expert Analysis')
+  })
+
+  it('includes article citation guideline in system prompt', async () => {
+    await handleQuery('test')
+
+    const [systemMsg] = vi.mocked(llm.complete).mock.calls[0]
+    expect(systemMsg).toContain('Expert Analysis')
+    expect(systemMsg).toContain('Cite the author and article title')
   })
 })

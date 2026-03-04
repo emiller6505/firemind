@@ -51,6 +51,15 @@ export interface CardGlossaryEntry {
   oracle_text: string | null
 }
 
+export interface ArticleChunk {
+  title: string
+  author: string | null
+  source: string
+  published_at: string
+  content: string
+  cards_mentioned: string[]
+}
+
 export interface RetrievedData {
   format: string | null
   window_days: number
@@ -58,7 +67,79 @@ export interface RetrievedData {
   top_decks: DeckSummary[]
   card_info: CardInfo | null
   card_glossary: CardGlossaryEntry[]
+  article_chunks: ArticleChunk[]
   confidence: 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY HIGH'
+}
+
+export async function fetchRelevantArticles(intent: Intent): Promise<ArticleChunk[]> {
+  if (!process.env.VOYAGE_API_KEY) return []
+  try {
+    const parts = [intent.format, intent.archetype, intent.opponent_archetype, intent.card]
+      .filter(Boolean) as string[]
+    if (parts.length === 0) return []
+    const queryString = parts.join(' ')
+
+    const { embed } = await import('../lib/voyage')
+    const [vector] = await embed([queryString])
+
+    const { data, error } = await supabase.rpc('match_article_chunks', {
+      query_embedding: JSON.stringify(vector),
+      format_filter: intent.format,
+      match_count: 20,
+    })
+    if (error || !data?.length) return []
+
+    type RawChunk = {
+      chunk_id: string; article_id: string; chunk_index: number
+      content: string; archetypes: string[]; cards_mentioned: string[]
+      title: string; author: string | null; published_at: string
+      source: string; similarity: number
+    }
+    let chunks = data as RawChunk[]
+
+    // Archetype boost: sort chunks with matching archetypes first
+    const targetArchetypes = [intent.archetype, intent.opponent_archetype].filter(Boolean) as string[]
+    if (targetArchetypes.length > 0) {
+      const lowerTargets = targetArchetypes.map(a => a.toLowerCase())
+      chunks.sort((a, b) => {
+        const aMatch = a.archetypes.some(ar => lowerTargets.some(t => ar.toLowerCase().includes(t)))
+        const bMatch = b.archetypes.some(ar => lowerTargets.some(t => ar.toLowerCase().includes(t)))
+        if (aMatch && !bMatch) return -1
+        if (!aMatch && bMatch) return 1
+        return 0
+      })
+    }
+
+    // Recency weight: full weight within timeframe, linear decay outside
+    const timeframeDays = intent.timeframe_days
+    const now = Date.now()
+    chunks = chunks.map(c => {
+      const ageDays = (now - new Date(c.published_at).getTime()) / 86_400_000
+      const decay = ageDays <= timeframeDays ? 1 : Math.max(0, 1 - (ageDays - timeframeDays) / (timeframeDays * 2))
+      return { ...c, similarity: c.similarity * decay }
+    }).sort((a, b) => b.similarity - a.similarity)
+
+    // Deduplicate: max 3 chunks per article
+    const countByArticle = new Map<string, number>()
+    const deduped: RawChunk[] = []
+    for (const c of chunks) {
+      const count = countByArticle.get(c.article_id) ?? 0
+      if (count >= 3) continue
+      countByArticle.set(c.article_id, count + 1)
+      deduped.push(c)
+    }
+
+    return deduped.slice(0, 6).map(c => ({
+      title: c.title,
+      author: c.author,
+      source: c.source,
+      published_at: c.published_at,
+      content: c.content,
+      cards_mentioned: c.cards_mentioned,
+    }))
+  } catch {
+    return []
+  }
 }
 
 export async function retrieveContext(intent: Intent, trace?: Trace): Promise<RetrievedData> {
@@ -71,10 +152,13 @@ export async function retrieveContext(intent: Intent, trace?: Trace): Promise<Re
 
   // For "against X" queries, fetch X's decklists so the LLM knows what threats to answer
   const archetypeForRetrieval = intent.archetype ?? intent.opponent_archetype
-  const [rawDecks, cardInfo] = await Promise.all([
+  const [rawDecks, cardInfo, articleChunks] = await Promise.all([
     time('fetchTopDecks', () => fetchTopDecks(intent.format, cutoff, archetypeForRetrieval, intent.archetype_b)),
     time('fetchCardInfo', () => intent.card ? fetchCardInfo(intent.card, intent.format, cutoff) : Promise.resolve(null)),
+    time('fetchRelevantArticles', () => fetchRelevantArticles(intent)),
   ])
+
+  const articleCardNames = articleChunks.flatMap(c => c.cards_mentioned)
 
   const tournaments_count = new Set(rawDecks.map(d => d.tournament_name)).size
   const [topDecks, confidence, cardGlossary] = await Promise.all([
@@ -83,10 +167,11 @@ export async function retrieveContext(intent: Intent, trace?: Trace): Promise<Re
     time('fetchCardGlossary', () => fetchCardGlossary(rawDecks, [
       ...(intent.card_mentions ?? []),
       ...(intent.card ? [intent.card] : []),
+      ...articleCardNames,
     ])),
   ])
 
-  return { format: intent.format, window_days, tournaments_count, top_decks: topDecks, card_info: cardInfo, card_glossary: cardGlossary, confidence }
+  return { format: intent.format, window_days, tournaments_count, top_decks: topDecks, card_info: cardInfo, card_glossary: cardGlossary, article_chunks: articleChunks, confidence }
 }
 
 // Pull the best confidence from metagame_snapshots for this format/window.

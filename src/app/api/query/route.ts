@@ -5,7 +5,7 @@ import { cacheGet, cacheSet } from '@/lib/query-cache'
 import type { QueryResponse } from '@/query/index'
 import { createClient } from '@/lib/supabase-server'
 import { parseDecklist, validateDecklist, formatValidationWarning } from '@/query/decklist'
-import { USER_LIMIT, getResetsAt } from '@/lib/rate-limit-constants'
+import { USER_LIMIT, WINDOW_MS } from '@/lib/rate-limit-constants'
 
 const MAX_HISTORY = 6
 
@@ -30,19 +30,25 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const resetsAt = getResetsAt()
-
   let currentCount = 0
+  let resetsAt: string | null = null
+  let windowExpired = true
+  let existingWindowStart: string | null = null
+
   if (user) {
-    const today = new Date().toISOString().slice(0, 10)
+    const now = Date.now()
     const { data: row } = await supabase
       .from('oracle_queries')
-      .select('count')
+      .select('count, window_start')
       .eq('user_id', user.id)
-      .eq('date', today)
       .single()
 
-    currentCount = row?.count ?? 0
+    if (row?.window_start && now - new Date(row.window_start).getTime() < WINDOW_MS) {
+      windowExpired = false
+      currentCount = row.count
+      existingWindowStart = row.window_start
+      resetsAt = new Date(new Date(row.window_start).getTime() + WINDOW_MS).toISOString()
+    }
 
     if (currentCount >= USER_LIMIT) {
       return NextResponse.json({
@@ -56,19 +62,17 @@ export async function POST(req: NextRequest) {
   const cached = cacheGet<QueryResponse>(key)
 
   if (cached) {
+    if (user) {
+      const upsertData = windowExpired
+        ? { user_id: user.id, count: 1, window_start: new Date().toISOString() }
+        : { user_id: user.id, count: currentCount + 1, window_start: existingWindowStart! }
+      await supabase.from('oracle_queries').upsert(upsertData, { onConflict: 'user_id' })
+      if (windowExpired) resetsAt = new Date(Date.now() + WINDOW_MS).toISOString()
+    }
+
     const rateLimit = user
       ? { remaining: USER_LIMIT - currentCount - 1, resets_at: resetsAt, tier: 'user' }
-      : { remaining: null, resets_at: resetsAt, tier: 'anon' }
-
-    if (user) {
-      const today = new Date().toISOString().slice(0, 10)
-      await supabase
-        .from('oracle_queries')
-        .upsert(
-          { user_id: user.id, date: today, count: currentCount + 1 },
-          { onConflict: 'user_id,date' },
-        )
-    }
+      : { remaining: null, resets_at: null, tier: 'anon' }
 
     const readable = new ReadableStream({
       start(controller) {
@@ -97,9 +101,11 @@ export async function POST(req: NextRequest) {
   try {
     const result = await handleQueryStream(body.query, history)
 
+    if (user && windowExpired) resetsAt = new Date(Date.now() + WINDOW_MS).toISOString()
+
     const rateLimit = user
       ? { remaining: USER_LIMIT - currentCount - 1, resets_at: resetsAt, tier: 'user' }
-      : { remaining: null, resets_at: resetsAt, tier: 'anon' }
+      : { remaining: null, resets_at: null, tier: 'anon' }
 
     const readable = new ReadableStream({
       async start(controller) {
@@ -125,13 +131,10 @@ export async function POST(req: NextRequest) {
           cacheSet(key, { answer: fullAnswer, intent: result.intent, data: result.data })
 
           if (user) {
-            const today = new Date().toISOString().slice(0, 10)
-            await supabase
-              .from('oracle_queries')
-              .upsert(
-                { user_id: user.id, date: today, count: currentCount + 1 },
-                { onConflict: 'user_id,date' },
-              )
+            const upsertData = windowExpired
+              ? { user_id: user.id, count: 1, window_start: new Date().toISOString() }
+              : { user_id: user.id, count: currentCount + 1, window_start: existingWindowStart! }
+            await supabase.from('oracle_queries').upsert(upsertData, { onConflict: 'user_id' })
           }
         } catch (err) {
           console.error('[api/query] stream error', err)

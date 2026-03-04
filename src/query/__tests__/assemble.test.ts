@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { assembleContext } from '../assemble.js'
-import { INTENT_FIXTURE, DECK_SUMMARY_FIXTURE, CARD_FIXTURE } from './helpers.js'
+import { INTENT_FIXTURE, DECK_SUMMARY_FIXTURE, CARD_FIXTURE, ARTICLE_CHUNK_FIXTURE } from './helpers.js'
 import type { RetrievedData } from '../retrieval.js'
 
 function makeData(overrides: Partial<RetrievedData> = {}): RetrievedData {
@@ -11,6 +11,7 @@ function makeData(overrides: Partial<RetrievedData> = {}): RetrievedData {
     top_decks: [DECK_SUMMARY_FIXTURE],
     card_info: null,
     card_glossary: [],
+    article_chunks: [],
     confidence: 'HIGH',
     ...overrides,
   }
@@ -110,5 +111,36 @@ describe('assembleContext', () => {
     expect(refIdx).toBeGreaterThan(-1)
     expect(decksIdx).toBeGreaterThan(-1)
     expect(refIdx).toBeLessThan(decksIdx)
+  })
+
+  it('renders Expert Analysis when article_chunks present', () => {
+    const ctx = assembleContext(INTENT_FIXTURE, makeData({
+      article_chunks: [ARTICLE_CHUNK_FIXTURE],
+    }))
+
+    expect(ctx).toContain('=== Expert Analysis ===')
+    expect(ctx).toContain('MTGGoldfish')
+    expect(ctx).toContain('"Sideboard Guide: Modern Burn"')
+    expect(ctx).toContain('by Frank Karsten')
+    expect(ctx).toContain('2026-02-15')
+    expect(ctx).toContain('Eidolon of the Great Revel')
+  })
+
+  it('omits Expert Analysis when article_chunks is empty', () => {
+    const ctx = assembleContext(INTENT_FIXTURE, makeData({ article_chunks: [] }))
+
+    expect(ctx).not.toContain('Expert Analysis')
+  })
+
+  it('renders Expert Analysis before Top Decks', () => {
+    const ctx = assembleContext(INTENT_FIXTURE, makeData({
+      article_chunks: [ARTICLE_CHUNK_FIXTURE],
+    }))
+
+    const expertIdx = ctx.indexOf('Expert Analysis')
+    const decksIdx = ctx.indexOf('Top Decks')
+    expect(expertIdx).toBeGreaterThan(-1)
+    expect(decksIdx).toBeGreaterThan(-1)
+    expect(expertIdx).toBeLessThan(decksIdx)
   })
 })

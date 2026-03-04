@@ -26,7 +26,7 @@ async function* fakeStream(chunks: string[]): AsyncIterable<string> {
 }
 
 const MOCK_INTENT = { format: 'modern' as const, question_type: 'metagame' as const, archetype: null, archetype_b: null, opponent_archetype: null, card: null, card_mentions: [] as string[], timeframe_days: 90 as const }
-const MOCK_DATA = { format: 'modern', window_days: 90, tournaments_count: 1, top_decks: [], card_info: null, card_glossary: [], confidence: 'HIGH' as const }
+const MOCK_DATA = { format: 'modern', window_days: 90, tournaments_count: 1, top_decks: [], card_info: null, card_glossary: [], article_chunks: [], confidence: 'HIGH' as const }
 
 async function readSSEEvents(res: Response): Promise<Array<{ event: string; data: unknown }>> {
   const text = await res.text()

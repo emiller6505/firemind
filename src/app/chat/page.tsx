@@ -8,7 +8,7 @@ import type { Components } from 'react-markdown'
 import type { User } from '@supabase/supabase-js'
 import { Button, Input, Card } from '@/components/ui'
 import { createClient } from '@/lib/supabase-browser'
-import { ANON_LIMIT, USER_LIMIT, ANON_STORAGE_KEY, CHAT_STORAGE_KEY, getTodayUTC } from '@/lib/rate-limit-constants'
+import { ANON_LIMIT, USER_LIMIT, ANON_STORAGE_KEY, CHAT_STORAGE_KEY, WINDOW_MS } from '@/lib/rate-limit-constants'
 
 const SUGGESTED_PROMPTS = [
   "What's dominating Modern right now?",
@@ -48,18 +48,24 @@ function useCountdown(resetsAt: string | null): string | null {
 // - Multi-tab race: tabs share localStorage but don't sync state in real time
 // - Anon→auth carry-over: anon queries don't count against auth limit (conversion incentive)
 // - Anon API bypass: no server-side anon enforcement — deferred to toy.7
-function getAnonCount(): number {
+function getAnonBucket(): { count: number; window_start: string } | null {
   try {
     const raw = localStorage.getItem(ANON_STORAGE_KEY)
-    if (!raw) return 0
-    const parsed = JSON.parse(raw) as { count: number; date: string }
-    if (parsed.date !== getTodayUTC()) return 0
-    return parsed.count
-  } catch { return 0 }
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { count: number; window_start: string }
+    if (!parsed.window_start) return null
+    if (Date.now() - new Date(parsed.window_start).getTime() >= WINDOW_MS) return null
+    return parsed
+  } catch { return null }
+}
+
+function getAnonCount(): number {
+  return getAnonBucket()?.count ?? 0
 }
 
 function setAnonCount(count: number) {
-  localStorage.setItem(ANON_STORAGE_KEY, JSON.stringify({ count, date: getTodayUTC() }))
+  const windowStart = getAnonBucket()?.window_start ?? new Date().toISOString()
+  localStorage.setItem(ANON_STORAGE_KEY, JSON.stringify({ count, window_start: windowStart }))
 }
 
 // --- Google SVG (shared with AuthModal) ---
@@ -256,11 +262,13 @@ function ChatPageInner() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (!session?.user) {
-        // Sign-out: Nav already exhausted the anon bucket — re-read it
-        setAnonCountState(getAnonCount())
-        setShowAuthCard(true)
+        // Re-read anon bucket (Nav exhausts it on sign-out)
+        const count = getAnonCount()
+        setAnonCountState(count)
+        if (count >= ANON_LIMIT) setShowAuthCard(true)
       } else {
         // Mid-session sign-in: fetch real query count
+        setShowAuthCard(false)
         fetch('/api/query-status')
           .then(r => r.json())
           .then(d => {
@@ -419,9 +427,9 @@ function ChatPageInner() {
 
               if (currentEvent === 'meta') {
                 metaPayload = payload
-                if (payload.rate_limit) {
+                if (payload.rate_limit?.tier === 'user') {
                   setResetsAt(payload.rate_limit.resets_at)
-                  if (payload.rate_limit.tier === 'user' && payload.rate_limit.remaining != null) {
+                  if (payload.rate_limit.remaining != null) {
                     setRemaining(payload.rate_limit.remaining)
                   }
                 }
@@ -456,18 +464,20 @@ function ChatPageInner() {
                 charQueue = ''
                 const finalContent = displayed
 
-                // Anon: increment localStorage
+                // Anon: increment localStorage and compute remaining from newCount directly
+                let anonRemaining: number | null = null
                 if (isAnon) {
                   const newCount = getAnonCount() + 1
                   setAnonCount(newCount)
                   setAnonCountState(newCount)
+                  anonRemaining = ANON_LIMIT - newCount
                   if (newCount >= ANON_LIMIT) {
                     setShowAuthCard(true)
                   }
                 }
 
                 const queryRemaining = isAnon
-                  ? ANON_LIMIT - getAnonCount()
+                  ? anonRemaining
                   : metaPayload?.rate_limit?.remaining ?? null
 
                 setMessages(prev => {

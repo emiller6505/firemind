@@ -64,6 +64,15 @@ export const CARD_FIXTURE = {
   cmc: 1,
 }
 
+export const ARTICLE_CHUNK_FIXTURE = {
+  title: 'Sideboard Guide: Modern Burn',
+  author: 'Frank Karsten',
+  source: 'MTGGoldfish',
+  published_at: '2026-02-15T00:00:00Z',
+  content: 'Against control, you want to board in Eidolon of the Great Revel and cut Searing Blaze.',
+  cards_mentioned: ['Eidolon of the Great Revel', 'Searing Blaze'],
+}
+
 export const INTENT_FIXTURE = {
   format: 'modern' as const,
   question_type: 'metagame' as const,

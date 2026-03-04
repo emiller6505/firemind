@@ -7,7 +7,8 @@ import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase-browser'
 import { Button, Drawer } from '@/components/ui'
 import AuthModal from './AuthModal'
-import { ANON_LIMIT, ANON_STORAGE_KEY, getTodayUTC } from '@/lib/rate-limit-constants'
+import ThemeSwitcher from './ThemeSwitcher'
+import { ANON_LIMIT, ANON_STORAGE_KEY, WINDOW_MS } from '@/lib/rate-limit-constants'
 
 export default function Nav() {
   const path = usePathname()
@@ -63,9 +64,20 @@ export default function Nav() {
 
   async function signOut() {
     const supabase = createClient()
+    // Exhaust anon bucket BEFORE signOut so onAuthStateChange listeners see it.
+    // Preserve existing window_start if active, otherwise start a new window.
+    let windowStart = new Date().toISOString()
+    try {
+      const raw = localStorage.getItem(ANON_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed.window_start && Date.now() - new Date(parsed.window_start).getTime() < WINDOW_MS) {
+          windowStart = parsed.window_start
+        }
+      }
+    } catch { /* use new window */ }
+    localStorage.setItem(ANON_STORAGE_KEY, JSON.stringify({ count: ANON_LIMIT, window_start: windowStart }))
     await supabase.auth.signOut()
-    // Exhaust the anon bucket so signing out doesn't grant fresh anon queries
-    localStorage.setItem(ANON_STORAGE_KEY, JSON.stringify({ count: ANON_LIMIT, date: getTodayUTC() }))
     setUser(null)
     setAvatarOpen(false)
   }
@@ -92,6 +104,7 @@ export default function Nav() {
 
           {/* Desktop right side */}
           <div className="hidden md:flex ml-auto items-center gap-2">
+            <ThemeSwitcher />
             {user ? (
               <>
                 <IconButton
@@ -164,6 +177,10 @@ export default function Nav() {
           <div className="md:hidden border-t border-edge bg-canvas/95 backdrop-blur-sm px-6 py-4 space-y-1">
             <MobileNavLink href="/chat" active={path.startsWith('/chat')}>Chat</MobileNavLink>
             <MobileNavLink href="/data" active={path.startsWith('/data')}>Metagame Data</MobileNavLink>
+            <div className="flex items-center gap-2 py-2">
+              <span className="text-sm text-ash">Theme</span>
+              <ThemeSwitcher />
+            </div>
             <div className="border-t border-edge my-3" />
             {user ? (
               <>

@@ -1,5 +1,5 @@
 import type { Intent } from './intent'
-import type { RetrievedData, DeckSummary, CardGlossaryEntry } from './retrieval'
+import type { RetrievedData, DeckSummary, CardGlossaryEntry, ArticleChunk } from './retrieval'
 import { rcqPromptNote } from '../lib/rcq-schedule'
 
 export function assembleContext(intent: Intent, data: RetrievedData): string {
@@ -27,6 +27,10 @@ export function assembleContext(intent: Intent, data: RetrievedData): string {
     lines.push(`\n${formatCardGlossary(data.card_glossary)}`)
   }
 
+  if (data.article_chunks.length > 0) {
+    lines.push(`\n${formatExpertAnalysis(data.article_chunks)}`)
+  }
+
   if (data.top_decks.length > 0) {
     lines.push(`\n=== Top Decks ===`)
     for (const deck of data.top_decks) {
@@ -51,6 +55,18 @@ function formatDeck(deck: DeckSummary): string {
     ? `\n  Sideboard: ${deck.sideboard.map(c => `${c.qty}x ${c.name}`).join(', ')}`
     : `\n  Sideboard: [not available for this source]`
   return `${header}\n  Mainboard: ${main}${side}`
+}
+
+function formatExpertAnalysis(chunks: ArticleChunk[]): string {
+  const lines = ['=== Expert Analysis ===']
+  for (const chunk of chunks) {
+    const date = chunk.published_at.split('T')[0]
+    const author = chunk.author ? ` by ${chunk.author}` : ''
+    lines.push(`[${chunk.source} - "${chunk.title}"${author}, ${date}]`)
+    lines.push(chunk.content)
+    lines.push('')
+  }
+  return lines.join('\n')
 }
 
 function formatCardGlossary(glossary: CardGlossaryEntry[]): string {
@@ -86,6 +102,7 @@ Guidelines:
     \`\`\`
 - Sideboard data is only available for some sources. If a deck's sideboard shows "[not available for this source]", omit the Sideboard section entirely and note that sideboard data is not published by that source. Never invent sideboard cards.
 - If the data is sparse or the question is outside the available data window, say so explicitly.
+- Expert Analysis: snippets from published strategy articles are provided when available. Cite the author and article title when referencing expert opinions. Prefer recent articles over older ones when advice conflicts. Tournament results (actual placements) take precedence over article opinions when they disagree.
 - Card effects: A Card Reference section lists the exact oracle text, mana cost, and type for cards in the data set. When explaining what a card does, its mana cost, or its type, use ONLY the information from the Card Reference. If a card is NOT listed in the Card Reference, do not state its mana cost, type line, or rules text — instead refer to it by name only or note that its oracle data is not available in the current data set.
 - Do not fabricate cards, placements, or results.
 - Do not use emojis.
