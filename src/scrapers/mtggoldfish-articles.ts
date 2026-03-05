@@ -73,9 +73,11 @@ export function extractArticleMeta(html: string): { title: string; author: strin
 }
 
 async function getAlreadyScrapedUrls(): Promise<Set<string>> {
+  // Inner join: only articles that have at least one chunk are considered done.
+  // Orphaned articles (row exists, no chunks) will be retried.
   const { data, error } = await supabase
     .from('articles')
-    .select('url')
+    .select('url, article_chunks!inner(id)')
   if (error) throw new Error(`DB error: ${error.message}`)
   return new Set((data ?? []).map(r => r.url))
 }
@@ -123,7 +125,18 @@ export async function scrapeNewMtggoldfishArticles(): Promise<void> {
 
         if (insertErr) {
           if (insertErr.code === '23505') {
-            console.log(`[articles] Already exists, skipping: ${url}`)
+            // Article row exists but has no chunks (otherwise getAlreadyScrapedUrls
+            // would have filtered it). Fetch existing ID and reprocess.
+            const { data: existing } = await supabase
+              .from('articles')
+              .select('id')
+              .eq('url', url)
+              .single()
+            if (existing) {
+              console.log(`[articles] Reprocessing incomplete article: ${url}`)
+              await parseAndStoreArticle(existing.id, html)
+              totalNew++
+            }
             alreadyScraped.add(url)
             continue
           }
