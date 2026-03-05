@@ -6,6 +6,10 @@
 {"created_at":"2026-03-01T22:13:56Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-aws","issue_id":"mindsculptor-397","type":"blocks"}
 {"created_at":"2026-03-01T22:13:55Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-sv6","issue_id":"mindsculptor-3hl","type":"blocks"}
 {"created_at":"2026-03-01T22:13:56Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-3wn","issue_id":"mindsculptor-3vp","type":"blocks"}
+{"created_at":"2026-03-05T13:57:16Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-3w3","issue_id":"mindsculptor-3w3.1","type":"parent-child"}
+{"created_at":"2026-03-05T14:01:05Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-3w3","issue_id":"mindsculptor-3w3.2","type":"parent-child"}
+{"created_at":"2026-03-05T14:07:50Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-3w3","issue_id":"mindsculptor-3w3.3","type":"parent-child"}
+{"created_at":"2026-03-05T14:07:53Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-3w3.2","issue_id":"mindsculptor-3w3.3","type":"blocks"}
 {"created_at":"2026-03-01T22:13:55Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-190","issue_id":"mindsculptor-3wn","type":"blocks"}
 {"created_at":"2026-03-03T19:19:44Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-5ae","issue_id":"mindsculptor-4zs","type":"blocks"}
 {"created_at":"2026-03-01T22:13:55Z","created_by":"Ethan Miller","depends_on_id":"mindsculptor-1vw","issue_id":"mindsculptor-500","type":"blocks"}

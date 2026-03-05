@@ -7,6 +7,16 @@
 {"issue_id":"mindsculptor-3w3","label":"backend"}
 {"issue_id":"mindsculptor-3w3","label":"data"}
 {"issue_id":"mindsculptor-3w3","label":"frontend"}
+{"issue_id":"mindsculptor-3w3.1","label":"backend"}
+{"issue_id":"mindsculptor-3w3.1","label":"data"}
+{"issue_id":"mindsculptor-3w3.1","label":"frontend"}
+{"issue_id":"mindsculptor-3w3.1","label":"infra"}
+{"issue_id":"mindsculptor-3w3.2","label":"backend"}
+{"issue_id":"mindsculptor-3w3.2","label":"data"}
+{"issue_id":"mindsculptor-3w3.2","label":"frontend"}
+{"issue_id":"mindsculptor-3w3.3","label":"backend"}
+{"issue_id":"mindsculptor-3w3.3","label":"data"}
+{"issue_id":"mindsculptor-3w3.3","label":"frontend"}
 {"issue_id":"mindsculptor-4ao","label":"design"}
 {"issue_id":"mindsculptor-4mm","label":"design"}
 {"issue_id":"mindsculptor-4vh","label":"ux"}
