@@ -122,7 +122,7 @@ async function loadKnownCardNames(): Promise<Set<string>> {
   const { supabase } = await import('../lib/supabase.js')
   // Paginate — cards table has ~77k rows, Supabase default limit is 1000
   const names = new Set<string>()
-  const PAGE_SIZE = 5000
+  const PAGE_SIZE = 1000
   let offset = 0
   while (true) {
     const { data, error } = await supabase
@@ -162,9 +162,9 @@ function extractArchetypes(text: string, archetypeNames: string[]): string[] {
 }
 
 export async function parseAndStoreArticle(articleId: string, html: string): Promise<void> {
-  // Extract article body — between main content markers
-  // MTGGoldfish wraps article content in a recognizable div
-  const bodyMatch = html.match(/<div[^>]*class="[^"]*article-content[^"]*"[^>]*>([\s\S]*?)(?:<\/div>\s*<div[^>]*class="[^"]*sidebar|$)/i)
+  // Extract article body from MTGGoldfish's <div class='article-contents' id='article-body'>
+  // Content ends at the tags/share container
+  const bodyMatch = html.match(/<div[^>]*id=['"]article-body['"][^>]*>([\s\S]*?)<div[^>]*class=['"][^'"]*article-tags-share-container/i)
   const body = bodyMatch?.[1] ?? html
 
   const chunks = chunkArticle(body)

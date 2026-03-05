@@ -6,6 +6,8 @@ import type { QueryResponse } from '@/query/index'
 import { createClient } from '@/lib/supabase-server'
 import { parseDecklist, validateDecklist, formatValidationWarning, fixCopyLimits, renderDecklist } from '@/query/decklist'
 import { USER_LIMIT, WINDOW_MS } from '@/lib/rate-limit-constants'
+import { checkCircuitBreaker } from '@/lib/circuit-breaker'
+import { checkIpLimit } from '@/lib/ip-rate-limit'
 
 const MAX_HISTORY = 6
 
@@ -29,6 +31,24 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!(await checkCircuitBreaker(supabase))) {
+    return NextResponse.json(
+      { error: 'Service temporarily unavailable — daily query limit reached' },
+      { status: 503 },
+    )
+  }
+
+  if (!user) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      ?? req.headers.get('x-real-ip') ?? 'unknown'
+    if (!checkIpLimit(ip).allowed) {
+      return NextResponse.json(
+        { error: 'rate_limit_exceeded', rate_limit: { remaining: 0, resets_at: null, tier: 'ip' } },
+        { status: 429 },
+      )
+    }
+  }
 
   let currentCount = 0
   let resetsAt: string | null = null

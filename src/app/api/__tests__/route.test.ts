@@ -3,14 +3,25 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 vi.mock('@/query/index.js', () => ({ handleQueryStream: vi.fn() }))
 vi.mock('@/lib/supabase-server', () => ({ createClient: vi.fn() }))
 vi.mock('@/lib/query-cache', () => ({ cacheGet: vi.fn().mockReturnValue(null), cacheSet: vi.fn() }))
+vi.mock('@/lib/circuit-breaker', () => ({ checkCircuitBreaker: vi.fn().mockResolvedValue(true) }))
+vi.mock('@/lib/ip-rate-limit', () => ({ checkIpLimit: vi.fn().mockReturnValue({ allowed: true }) }))
 
 import { handleQueryStream } from '@/query/index.js'
 import { createClient } from '@/lib/supabase-server'
 import { cacheGet } from '@/lib/query-cache'
+import { checkCircuitBreaker } from '@/lib/circuit-breaker'
+import { checkIpLimit } from '@/lib/ip-rate-limit'
 import { POST } from '../query/route.js'
 
 const mockSupabase = {
   auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
+  from: vi.fn().mockReturnValue({
+    select: vi.fn().mockReturnValue({
+      gte: vi.fn().mockResolvedValue({ count: 0 }),
+      eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: null }) }),
+    }),
+    upsert: vi.fn().mockResolvedValue({}),
+  }),
 }
 
 function makeReq(body: unknown, malformedJson = false) {
@@ -18,6 +29,7 @@ function makeReq(body: unknown, malformedJson = false) {
     json: malformedJson
       ? () => Promise.reject(new SyntaxError('Unexpected token'))
       : () => Promise.resolve(body),
+    headers: new Headers(),
   } as unknown as import('next/server').NextRequest
 }
 
@@ -50,6 +62,8 @@ beforeEach(() => {
   vi.mocked(createClient).mockResolvedValue(mockSupabase as never)
   mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
   vi.mocked(cacheGet).mockReturnValue(null)
+  vi.mocked(checkCircuitBreaker).mockResolvedValue(true)
+  vi.mocked(checkIpLimit).mockReturnValue({ allowed: true })
   vi.mocked(handleQueryStream).mockResolvedValue({
     intent: MOCK_INTENT,
     data: MOCK_DATA,

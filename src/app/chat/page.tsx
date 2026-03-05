@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js'
 import { Button, Input, Card } from '@/components/ui'
 import { createClient } from '@/lib/supabase-browser'
 import { ANON_LIMIT, USER_LIMIT, ANON_STORAGE_KEY, CHAT_STORAGE_KEY, WINDOW_MS } from '@/lib/rate-limit-constants'
+import { remainingColor, counterReady as isCounterReady, showGoSpikeLink } from '@/lib/chat-helpers'
 
 const SUGGESTED_PROMPTS = [
   "What's dominating Modern right now?",
@@ -181,12 +182,6 @@ function OracleThinking() {
       </div>
     </div>
   )
-}
-
-function remainingColor(remaining: number): string {
-  if (remaining >= 3) return 'text-ash'
-  if (remaining === 2) return 'text-gold'
-  return 'text-flame'
 }
 
 function AuthPromptCard({ resetsAt, messages }: { resetsAt: string | null; messages: Message[] }) {
@@ -537,7 +532,7 @@ function ChatPageInner() {
 
   // Compute counter display
   const limit = isAnon ? ANON_LIMIT : USER_LIMIT
-  const counterReady = isAnon || remaining != null
+  const counterReady = isCounterReady(isAnon, anonCount, remaining)
   const used = isAnon ? anonCount : (remaining != null ? limit - remaining : 0)
   const displayRemaining = limit - used
 
@@ -677,8 +672,8 @@ function ChatPageInner() {
       <div className="border-t border-edge bg-canvas/80 backdrop-blur-sm flex-shrink-0">
         <div className="max-w-3xl mx-auto px-4 py-3 sm:px-6 sm:py-4 space-y-2">
           {!atLimit && counterReady && (
-            <p className="text-xs text-ash text-center">
-              {displayRemaining} {displayRemaining === 1 ? 'query' : 'queries'} left{countdown ? <>, resets in <span className="font-mono tabular-nums">{countdown}</span></> : ' today'}. <a href="#" className="text-spark hover:text-spark/80 transition-colors">Become a Spike</a> to unlock more.
+            <p className={`text-xs ${remainingColor(displayRemaining)} text-center`}>
+              {displayRemaining} {displayRemaining === 1 ? 'query' : 'queries'} left{countdown ? <>, resets in <span className="font-mono tabular-nums">{countdown}</span></> : ' today'}.{showGoSpikeLink(displayRemaining) && <>{' '}<a href="/pricing" className="text-spark hover:text-spark/80 transition-colors">Go Spike &rarr;</a></>}
             </p>
           )}
           {atLimit && countdown && (

@@ -68,6 +68,10 @@ export function extractArticleMeta(html: string): { title: string; author: strin
   else if (lower.includes('standard')) format = 'standard'
   else if (lower.includes('pioneer')) format = 'pioneer'
   else if (lower.includes('legacy')) format = 'legacy'
+  else if (lower.includes('vintage')) format = 'vintage'
+  else if (lower.includes('pauper')) format = 'pauper'
+  else if (lower.includes('historic')) format = 'historic'
+  else if (lower.includes('commander') || lower.includes('edh') || lower.includes('cedh')) format = 'commander'
 
   return { title, author, publishedAt, format }
 }

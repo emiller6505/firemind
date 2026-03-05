@@ -6,6 +6,9 @@ Talk to the user like a senior engineer peer — skip basics, be direct, no hand
 ## Autonomy
 Operate autonomously — proceed without asking for confirmation on most actions. Only pause for truly destructive or irreversible operations (e.g., force-pushing, dropping databases, deleting branches with unmerged work).
 
+### Bash command permissions
+You have permission to run standard, safe bash commands, such as: ls, cat, less, git log, cd, echo, grep
+
 ## Code Style
 - Prefer functional style: functions and modules over classes
 - No unnecessary abstractions — don't create helpers or utilities for one-off operations

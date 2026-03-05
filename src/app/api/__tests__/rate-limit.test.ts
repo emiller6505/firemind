@@ -3,10 +3,14 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 vi.mock('@/query/index', () => ({ handleQueryStream: vi.fn() }))
 vi.mock('@/lib/supabase-server', () => ({ createClient: vi.fn() }))
 vi.mock('@/lib/query-cache', () => ({ cacheGet: vi.fn().mockReturnValue(null), cacheSet: vi.fn() }))
+vi.mock('@/lib/circuit-breaker', () => ({ checkCircuitBreaker: vi.fn() }))
+vi.mock('@/lib/ip-rate-limit', () => ({ checkIpLimit: vi.fn() }))
 
 import { handleQueryStream } from '@/query/index'
 import { createClient } from '@/lib/supabase-server'
 import { cacheGet } from '@/lib/query-cache'
+import { checkCircuitBreaker } from '@/lib/circuit-breaker'
+import { checkIpLimit } from '@/lib/ip-rate-limit'
 import { POST } from '../query/route'
 import { USER_LIMIT, WINDOW_MS } from '@/lib/rate-limit-constants'
 import { makeChainable } from '@/query/__tests__/helpers'
@@ -21,6 +25,7 @@ async function* fakeStream(chunks: string[]): AsyncIterable<string> {
 function makeReq(body: unknown) {
   return {
     json: () => Promise.resolve(body),
+    headers: new Headers(),
   } as unknown as import('next/server').NextRequest
 }
 
@@ -74,6 +79,8 @@ function setupMocks(opts: {
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(cacheGet).mockReturnValue(null)
+  vi.mocked(checkCircuitBreaker).mockResolvedValue(true)
+  vi.mocked(checkIpLimit).mockReturnValue({ allowed: true })
   vi.mocked(handleQueryStream).mockResolvedValue({
     intent: MOCK_INTENT,
     data: MOCK_DATA,
