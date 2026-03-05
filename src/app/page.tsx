@@ -26,7 +26,7 @@ function MetaBar({ name, href, share, trendDelta, maxShare }: { name: string; hr
     <div className="flex items-center gap-2 sm:gap-3 py-1.5">
       <div className="flex-1 min-w-0 bg-edge rounded-full h-1.5">
         <div
-          className="bg-spark/60 h-1.5 rounded-full"
+          className="bg-flame/60 h-1.5 rounded-full"
           style={{ width: `${(share / (maxShare * 2)) * 100}%` }}
         />
       </div>

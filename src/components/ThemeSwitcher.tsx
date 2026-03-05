@@ -11,7 +11,7 @@ const THEME_LABELS: Record<Theme, string> = {
 }
 
 const THEME_SWATCHES: Record<Theme, string[]> = {
-  dark: ['#06080F', '#0C1220', '#172035', '#4F8EF7', '#E4EEFF'],
+  dark: ['#08070E', '#0E101E', '#191E32', '#4F8EF7', '#D4552A'],
   light: ['#EFF2F8', '#FFFFFF', '#CDD4E8', '#2563EB', '#0F172A'],
   terminal: ['#0A0F0A', '#0F160F', '#1A2E1A', '#22C55E', '#DCFCE7'],
   arcana: ['#F4E8C9', '#EBDCB9', '#B49B6E', '#7C3AED', '#1C140C'],

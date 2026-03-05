@@ -169,7 +169,7 @@ function OracleThinking() {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-spark text-xs">⚡</span>
+        <span className="text-flame text-xs">⚡</span>
         <span className="text-xs font-medium text-copper tracking-wide uppercase">Firemind</span>
       </div>
       <div className="oracle-border pl-4 py-3 flex items-center gap-2">
@@ -202,7 +202,7 @@ function AuthPromptCard({ resetsAt, messages }: { resetsAt: string | null; messa
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-spark text-xs">⚡</span>
+        <span className="text-flame text-xs">⚡</span>
         <span className="text-xs font-medium text-copper tracking-wide uppercase">Firemind</span>
       </div>
       <div
@@ -552,7 +552,7 @@ function ChatPageInner() {
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)]">
               {atLimit ? (
                 <div className="space-y-4 text-center max-w-sm">
-                  <div className="text-3xl text-spark/30">⚡</div>
+                  <div className="text-3xl text-flame/30">⚡</div>
                   <p className="text-sm text-ink font-medium">
                     {anonAtLimit ? "You've used your free queries." : "You've reached today's query limit."}
                   </p>
@@ -603,7 +603,7 @@ function ChatPageInner() {
                 <div className="space-y-3">
                   {/* Oracle label */}
                   <div className="flex items-center gap-2">
-                    <span className="text-spark text-xs">⚡</span>
+                    <span className="text-flame text-xs">⚡</span>
                     <span className="text-xs font-medium text-copper tracking-wide uppercase">Firemind</span>
                   </div>
                   {/* Response body */}

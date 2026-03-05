@@ -4,9 +4,9 @@
 
 @layer base {
   :root {
-    --color-canvas:  6 8 15;
-    --color-surface: 12 18 32;
-    --color-edge:    23 32 53;
+    --color-canvas:  8 7 14;
+    --color-surface: 14 16 30;
+    --color-edge:    25 30 50;
     --color-spark:   79 142 247;
     --color-flame:   212 85 42;
     --color-copper:  184 115 51;
@@ -19,9 +19,11 @@
     --text-glow:     none;
     --bg-pattern:
       linear-gradient(rgb(var(--color-spark) / 0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(var(--color-spark) / 0.025) 1px, transparent 1px);
-    --bg-size: 48px 48px;
-    --bg-position: 24px 24px;
+      linear-gradient(90deg, rgb(var(--color-spark) / 0.025) 1px, transparent 1px),
+      linear-gradient(rgb(var(--color-flame) / 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--color-flame) / 0.015) 1px, transparent 1px);
+    --bg-size: 48px 48px, 48px 48px, 64px 64px, 64px 64px;
+    --bg-position: 24px 24px, 24px 24px, 0 0, 0 0;
   }
 
   [data-theme="light"] {
@@ -110,6 +112,25 @@ body::before {
   background-position: var(--bg-position);
 }
 
+[data-theme="arcana"] .border-edge,
+[data-theme="arcana"] .oracle-border {
+  position: relative;
+  border-color: rgb(180 155 110 / 0.6);
+}
+
+[data-theme="arcana"] .border-edge::before,
+[data-theme="arcana"] .oracle-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: inherit;
+  border-radius: inherit;
+  box-shadow: inset 0 0 16px 3px rgb(180 155 110 / 0.25);
+  filter: url(#parchment-edge);
+  pointer-events: none;
+  z-index: 0;
+}
+
 [data-theme="arcana"] body::before {
   box-shadow: inset 0 0 120px 60px rgb(28 20 12 / 0.15);
 }
@@ -128,8 +149,8 @@ body > * {
     box-shadow: 0 0 0 1px rgb(var(--color-spark) / 0.2), 0 0 6px rgb(var(--color-spark) / 0.08);
   }
   .oracle-border {
-    border-left: 2px solid rgb(var(--color-spark));
-    box-shadow: -4px 0 16px rgb(var(--color-spark) / 0.08);
+    border-left: 2px solid rgb(var(--color-flame));
+    box-shadow: -4px 0 16px rgb(var(--color-flame) / 0.08);
   }
   .font-display { font-family: var(--font-display); }
   .font-body    { font-family: var(--font-body); }

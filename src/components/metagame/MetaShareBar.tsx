@@ -100,7 +100,7 @@ function MobileMetaList({ data, format }: { data: MetaShareEntry[]; format: stri
             </div>
             <div className="flex-1 h-2 bg-edge rounded-full overflow-hidden">
               <div
-                className="h-full bg-spark/60 rounded-full"
+                className="h-full bg-flame/60 rounded-full"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -146,7 +146,7 @@ export function MetaShareBar({ data, format }: { data: MetaShareEntry[]; format:
             <Tooltip content={<CustomTooltip />} cursor={{ fill: '#172035', opacity: 0.5 }} />
             <Bar dataKey="meta_share" radius={[0, 4, 4, 0]} barSize={24}>
               {chartData.map((_, i) => (
-                <Cell key={i} fill="#4F8EF7" fillOpacity={0.7} />
+                <Cell key={i} fill="#D4552A" fillOpacity={0.7} />
               ))}
             </Bar>
           </BarChart>

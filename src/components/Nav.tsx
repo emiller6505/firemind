@@ -90,7 +90,7 @@ export default function Nav() {
         <div className="max-w-7xl mx-auto px-6 h-12 flex items-center gap-6">
 
           <Link href="/" className="flex items-center gap-1.5 shrink-0 group">
-            <span className="text-spark text-base leading-none">⚡</span>
+            <span className="text-flame text-base leading-none">⚡</span>
             <span className="font-semibold tracking-tight text-ink group-hover:text-spark transition-colors">
               Firemind
             </span>
@@ -148,7 +148,7 @@ export default function Nav() {
                 Sign in
               </Button>
             )}
-            <button className="text-sm font-medium px-3 py-2 rounded-md border border-spark/20 bg-spark/10 text-spark hover:bg-spark/20 transition-colors">
+            <button className="text-sm font-medium px-3 py-2 rounded-md border border-flame/20 bg-flame/10 text-flame hover:bg-flame/20 transition-colors">
               Go Spike ↑
             </button>
           </div>
@@ -214,7 +214,7 @@ export default function Nav() {
               </button>
             )}
             <div className="border-t border-edge my-3" />
-            <button className="w-full text-sm font-medium px-3 py-2.5 min-h-[44px] rounded-md border border-spark/20 bg-spark/10 text-spark hover:bg-spark/20 transition-colors text-center">
+            <button className="w-full text-sm font-medium px-3 py-2.5 min-h-[44px] rounded-md border border-flame/20 bg-flame/10 text-flame hover:bg-flame/20 transition-colors text-center">
               Go Spike ↑
             </button>
           </div>

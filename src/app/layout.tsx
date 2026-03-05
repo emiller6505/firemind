@@ -38,6 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}} />
       </head>
       <body className="bg-canvas text-ink antialiased min-h-screen font-sans">
+        <svg className="absolute w-0 h-0" aria-hidden="true">
+          <filter id="parchment-edge">
+            <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="4" seed="2" />
+            <feDisplacementMap in="SourceGraphic" scale="4" />
+          </filter>
+        </svg>
         <Nav />
         {children}
       </body>
