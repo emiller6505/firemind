@@ -146,25 +146,8 @@ interface Message {
   }
 }
 
-const THINKING_QUIPS = [
-  'The Firemind is considering',
-  'The Firemind is brainstorming',
-  'The Firemind is preordaining',
-  'The Firemind is pondering',
-  'The Firemind is surveilling',
-  'The Firemind is scrying',
-  'The Firemind is consulting the serum visions',
-  'The Firemind is peering through the aether',
-  'The Firemind is opting',
-]
-
-function OracleThinking() {
-  const [quipIdx, setQuipIdx] = useState(0)
-
-  useEffect(() => {
-    const id = setInterval(() => setQuipIdx(i => (i + 1) % THINKING_QUIPS.length), 2500)
-    return () => clearInterval(id)
-  }, [])
+function OracleThinking({ stage, pct, label }: { stage: string | null; pct: number; label: string }) {
+  const isStreaming = stage === 'streaming'
 
   return (
     <div className="space-y-3">
@@ -172,13 +155,14 @@ function OracleThinking() {
         <span className="text-brand text-xs">⚡</span>
         <span className="text-xs font-medium text-copper tracking-wide uppercase">Firemind</span>
       </div>
-      <div className="oracle-border pl-4 py-3 flex items-center gap-2">
-        <span className="text-sm text-ash italic">{THINKING_QUIPS[quipIdx]}</span>
-        <span className="flex gap-1 self-end mb-0.5">
-          <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:0ms]" />
-          <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:150ms]" />
-          <span className="w-1.5 h-1.5 bg-spark/60 rounded-full animate-bounce [animation-delay:300ms]" />
-        </span>
+      <div className="oracle-border pl-4 py-3 pr-4 space-y-2.5">
+        <p className="text-sm text-ash italic">{label}</p>
+        <div className="w-full h-0.5 bg-edge rounded-full overflow-hidden">
+          <div
+            className={`h-full bg-spark/70 rounded-full transition-all duration-700 ease-out ${isStreaming ? 'animate-pulse' : ''}`}
+            style={{ width: isStreaming ? '70%' : `${pct}%` }}
+          />
+        </div>
       </div>
     </div>
   )
@@ -236,6 +220,9 @@ function ChatPageInner() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [progressStage, setProgressStage] = useState<string | null>(null)
+  const [progressPct, setProgressPct] = useState(0)
+  const [progressLabel, setProgressLabel] = useState('Thinking…')
   const [user, setUser] = useState<User | null>(null)
   const [anonCount, setAnonCountState] = useState(0)
   const [remaining, setRemaining] = useState<number | null>(null)
@@ -340,6 +327,9 @@ function ChatPageInner() {
     setInput('')
     setMessages(prev => [...prev, { role: 'user', content: q }])
     setLoading(true)
+    setProgressStage(null)
+    setProgressPct(0)
+    setProgressLabel('Thinking…')
 
     const currentMessages = [...messages, { role: 'user' as const, content: q }]
     const history = currentMessages
@@ -422,7 +412,11 @@ function ChatPageInner() {
             } else if (line.startsWith('data: ')) {
               const payload = JSON.parse(line.slice(6))
 
-              if (currentEvent === 'meta') {
+              if (currentEvent === 'progress') {
+                setProgressLabel(payload.label)
+                if (payload.pct != null) setProgressPct(payload.pct)
+                setProgressStage(payload.stage)
+              } else if (currentEvent === 'meta') {
                 metaPayload = payload
                 if (payload.rate_limit?.tier === 'user') {
                   setResetsAt(payload.rate_limit.resets_at)
@@ -660,7 +654,7 @@ function ChatPageInner() {
             </div>
           ))}
 
-          {loading && <OracleThinking />}
+          {loading && <OracleThinking stage={progressStage} pct={progressPct} label={progressLabel} />}
 
           {showAuthCard && !loading && <AuthPromptCard resetsAt={resetsAt} messages={messages} />}
 

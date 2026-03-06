@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
-vi.mock('@/query/index', () => ({ handleQueryStream: vi.fn() }))
+vi.mock('@/query/index', () => ({ streamPipeline: vi.fn() }))
 vi.mock('@/lib/supabase-server', () => ({ createClient: vi.fn() }))
 vi.mock('@/lib/query-cache', () => ({ cacheGet: vi.fn().mockReturnValue(null), cacheSet: vi.fn() }))
 vi.mock('@/lib/circuit-breaker', () => ({ checkCircuitBreaker: vi.fn() }))
@@ -8,8 +8,9 @@ vi.mock('@/lib/ip-rate-limit', () => ({ checkIpLimit: vi.fn() }))
 vi.mock('@/lib/get-client-ip', () => ({ getClientIp: vi.fn(() => '127.0.0.1') }))
 vi.mock('@/lib/connection-limiter', () => ({ acquireConnection: vi.fn(() => true), releaseConnection: vi.fn() }))
 vi.mock('@/lib/query-blocklist', () => ({ checkBlocklist: vi.fn(() => ({ blocked: false, pattern: '' })) }))
+vi.mock('@/query/decklist', () => ({ parseDecklist: vi.fn(() => null), validateDecklist: vi.fn(() => []), formatValidationWarning: vi.fn(), fixCopyLimits: vi.fn(), renderDecklist: vi.fn() }))
 
-import { handleQueryStream } from '@/query/index'
+import { streamPipeline } from '@/query/index'
 import { createClient } from '@/lib/supabase-server'
 import { cacheGet } from '@/lib/query-cache'
 import { checkCircuitBreaker } from '@/lib/circuit-breaker'
@@ -19,10 +20,6 @@ import { USER_LIMIT, WINDOW_MS } from '@/lib/rate-limit-constants'
 
 const MOCK_INTENT = { format: 'modern' as const, question_type: 'metagame' as const, archetype: null, archetype_b: null, opponent_archetype: null, card: null, card_mentions: [] as string[], timeframe_days: 90 as const }
 const MOCK_DATA = { format: 'modern', window_days: 90, tournaments_count: 1, top_decks: [], card_info: null, card_glossary: [], article_chunks: [], confidence: 'HIGH' as const }
-
-async function* fakeStream(chunks: string[]): AsyncIterable<string> {
-  for (const chunk of chunks) yield chunk
-}
 
 function makeReq(body: unknown) {
   return {
@@ -46,6 +43,10 @@ async function readSSEEvents(res: Response): Promise<Array<{ event: string; data
     if (event && data) events.push({ event, data: JSON.parse(data) })
   }
   return events
+}
+
+function findEvent(events: Array<{ event: string; data: unknown }>, name: string) {
+  return events.find(e => e.event === name)
 }
 
 let mockRpc: ReturnType<typeof vi.fn>
@@ -72,16 +73,21 @@ function setupMocks(opts: {
   vi.mocked(createClient).mockResolvedValue(mockSupabase as never)
 }
 
+function mockStreamPipeline() {
+  vi.mocked(streamPipeline).mockImplementation(async (_query, _history, rateLimit, emit) => {
+    emit('progress', { stage: 'intent', pct: 10, label: 'Understanding your question…' })
+    emit('meta', { intent: MOCK_INTENT, data: MOCK_DATA, rate_limit: rateLimit })
+    emit('delta', { text: 'answer' })
+    return { intent: MOCK_INTENT, data: MOCK_DATA, fullAnswer: 'answer' }
+  })
+}
+
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(cacheGet).mockReturnValue(null)
   vi.mocked(checkCircuitBreaker).mockResolvedValue(true)
   vi.mocked(checkIpLimit).mockReturnValue({ allowed: true })
-  vi.mocked(handleQueryStream).mockResolvedValue({
-    intent: MOCK_INTENT,
-    data: MOCK_DATA,
-    stream: fakeStream(['answer']),
-  })
+  mockStreamPipeline()
 })
 
 describe('POST /api/query rate limiting', () => {
@@ -91,7 +97,7 @@ describe('POST /api/query rate limiting', () => {
 
     const res = await POST(makeReq({ query: 'test' }))
     const events = await readSSEEvents(res)
-    const meta = events[0].data as Record<string, unknown>
+    const meta = findEvent(events, 'meta')!.data as Record<string, unknown>
     const rl = meta.rate_limit as Record<string, unknown>
 
     expect(rl.tier).toBe('anon')
@@ -105,7 +111,7 @@ describe('POST /api/query rate limiting', () => {
 
     const res = await POST(makeReq({ query: 'test' }))
     const events = await readSSEEvents(res)
-    const meta = events[0].data as Record<string, unknown>
+    const meta = findEvent(events, 'meta')!.data as Record<string, unknown>
     const rl = meta.rate_limit as Record<string, unknown>
 
     expect(rl.tier).toBe('user')
@@ -133,7 +139,7 @@ describe('POST /api/query rate limiting', () => {
 
     const res = await POST(makeReq({ query: 'test' }))
     const events = await readSSEEvents(res)
-    const meta = events[0].data as Record<string, unknown>
+    const meta = findEvent(events, 'meta')!.data as Record<string, unknown>
     const rl = meta.rate_limit as Record<string, unknown>
 
     expect(rl.remaining).toBe(USER_LIMIT - 6)

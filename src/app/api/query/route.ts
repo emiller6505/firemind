@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { handleQueryStream } from '@/query/index'
-import type { ConversationMessage } from '@/query/index'
+import { streamPipeline } from '@/query/index'
+import type { ConversationMessage, QueryResponse } from '@/query/index'
 import { cacheGet, cacheSet } from '@/lib/query-cache'
-import type { QueryResponse } from '@/query/index'
 import { createClient } from '@/lib/supabase-server'
 import { parseDecklist, validateDecklist, formatValidationWarning, fixCopyLimits, renderDecklist } from '@/query/decklist'
 import { USER_LIMIT, WINDOW_MS } from '@/lib/rate-limit-constants'
@@ -138,13 +137,19 @@ export async function POST(req: NextRequest) {
   }
   const cached = cacheGet<QueryResponse>(key)
 
+  const sseHeaders = { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', ...cors }
+
   if (cached) {
     const readable = new ReadableStream({
       start(controller) {
+        const encoder = new TextEncoder()
+        const emit = (event: string, data: unknown) =>
+          controller.enqueue(encoder.encode(sseEvent(event, data)))
         try {
-          const encoder = new TextEncoder()
-          controller.enqueue(encoder.encode(sseEvent('meta', { intent: cached.intent, data: cached.data, rate_limit: rateLimit })))
-          controller.enqueue(encoder.encode(sseEvent('delta', { text: cached.answer })))
+          emit('progress', { stage: 'intent', pct: 10, label: 'Understanding your question…' })
+          emit('progress', { stage: 'generating', pct: 55, label: 'Found in cache…' })
+          emit('meta', { intent: cached.intent, data: cached.data, rate_limit: rateLimit })
+          emit('delta', { text: cached.answer })
 
           const parsed = parseDecklist(cached.answer)
           if (parsed) {
@@ -156,11 +161,11 @@ export async function POST(req: NextRequest) {
                 const fixed = fixCopyLimits(parsed.main, parsed.side)
                 corrected_list = renderDecklist(fixed.main, fixed.side)
               }
-              controller.enqueue(encoder.encode(sseEvent('decklist_warning', { errors, message: formatValidationWarning(errors), corrected_list })))
+              emit('decklist_warning', { errors, message: formatValidationWarning(errors), corrected_list })
             }
           }
 
-          controller.enqueue(encoder.encode(sseEvent('done', {})))
+          emit('done', {})
         } finally {
           controller.close()
           releaseConnection(ip)
@@ -168,59 +173,44 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return new Response(readable, {
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', ...cors },
-    })
+    return new Response(readable, { headers: sseHeaders })
   }
 
-  // --- Stream query ---
-  try {
-    const result = await handleQueryStream(body.query, history)
+  // --- Stream query — pipeline runs inside start() so SSE opens immediately ---
+  const readable = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder()
+      const emit = (event: string, data: unknown) =>
+        controller.enqueue(encoder.encode(sseEvent(event, data)))
 
-    const readable = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder()
-        controller.enqueue(encoder.encode(sseEvent('meta', { intent: result.intent, data: result.data, rate_limit: rateLimit })))
+      try {
+        const { intent, data, fullAnswer } = await streamPipeline(body.query, history, rateLimit, emit)
 
-        let fullAnswer = ''
-        try {
-          for await (const chunk of result.stream) {
-            fullAnswer += chunk
-            controller.enqueue(encoder.encode(sseEvent('delta', { text: chunk })))
-          }
-          const parsed = parseDecklist(fullAnswer)
-          if (parsed) {
-            const errors = validateDecklist(parsed.main, parsed.side)
-            if (errors.length > 0) {
-              const copyErrors = errors.filter(e => e.type === 'copy_limit')
-              let corrected_list: string | undefined
-              if (copyErrors.length > 0) {
-                const fixed = fixCopyLimits(parsed.main, parsed.side)
-                corrected_list = renderDecklist(fixed.main, fixed.side)
-              }
-              controller.enqueue(encoder.encode(sseEvent('decklist_warning', { errors, message: formatValidationWarning(errors), corrected_list })))
+        const parsed = parseDecklist(fullAnswer)
+        if (parsed) {
+          const errors = validateDecklist(parsed.main, parsed.side)
+          if (errors.length > 0) {
+            const copyErrors = errors.filter(e => e.type === 'copy_limit')
+            let corrected_list: string | undefined
+            if (copyErrors.length > 0) {
+              const fixed = fixCopyLimits(parsed.main, parsed.side)
+              corrected_list = renderDecklist(fixed.main, fixed.side)
             }
+            emit('decklist_warning', { errors, message: formatValidationWarning(errors), corrected_list })
           }
-
-          controller.enqueue(encoder.encode(sseEvent('done', {})))
-
-          cacheSet(key, { answer: fullAnswer, intent: result.intent, data: result.data })
-        } catch (err) {
-          console.error('[api/query] stream error', err)
-          controller.enqueue(encoder.encode(sseEvent('error', { error: 'Stream failed' })))
-        } finally {
-          releaseConnection(ip)
-          controller.close()
         }
-      },
-    })
 
-    return new Response(readable, {
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', ...cors },
-    })
-  } catch (err) {
-    releaseConnection(ip)
-    console.error('[api/query]', err)
-    return NextResponse.json({ error: 'Query failed' }, { status: 500, headers: cors })
-  }
+        emit('done', {})
+        cacheSet(key, { answer: fullAnswer, intent, data })
+      } catch (err) {
+        console.error('[api/query] stream error', err)
+        emit('error', { error: 'Stream failed' })
+      } finally {
+        releaseConnection(ip)
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(readable, { headers: sseHeaders })
 }

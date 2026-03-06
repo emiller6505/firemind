@@ -27,7 +27,7 @@ vi.mock('@/lib/query-blocklist', () => ({
 }))
 
 vi.mock('@/query/index', () => ({
-  handleQueryStream: vi.fn(),
+  streamPipeline: vi.fn(),
 }))
 
 vi.mock('@/lib/query-cache', () => ({
@@ -50,6 +50,7 @@ import { checkIpLimit } from '@/lib/ip-rate-limit'
 import { getClientIp } from '@/lib/get-client-ip'
 import { acquireConnection } from '@/lib/connection-limiter'
 import { checkBlocklist } from '@/lib/query-blocklist'
+import { streamPipeline } from '@/query/index'
 import { NextRequest } from 'next/server'
 
 const mockCreateClient = createClient as ReturnType<typeof vi.fn>
@@ -58,6 +59,9 @@ const mockCheckIpLimit = checkIpLimit as ReturnType<typeof vi.fn>
 const mockGetClientIp = getClientIp as ReturnType<typeof vi.fn>
 const mockAcquireConnection = acquireConnection as ReturnType<typeof vi.fn>
 const mockCheckBlocklist = checkBlocklist as ReturnType<typeof vi.fn>
+
+const MOCK_INTENT = { format: 'modern' as const, question_type: 'metagame' as const, archetype: null, archetype_b: null, opponent_archetype: null, card: null, card_mentions: [] as string[], timeframe_days: 90 as const }
+const MOCK_DATA = { format: 'modern', window_days: 90, tournaments_count: 1, top_decks: [], card_info: null, card_glossary: [], article_chunks: [], confidence: 'HIGH' as const }
 
 function makeRequest(body: Record<string, unknown>, headers?: Record<string, string>) {
   return new NextRequest('http://localhost/api/query', {
@@ -93,6 +97,11 @@ beforeEach(() => {
   mockAcquireConnection.mockReturnValue(true)
   mockCheckBlocklist.mockReturnValue({ blocked: false, pattern: '' })
   mockGetClientIp.mockReturnValue('127.0.0.1')
+  vi.mocked(streamPipeline).mockImplementation(async (_q, _h, rateLimit, emit) => {
+    emit('meta', { intent: MOCK_INTENT, data: MOCK_DATA, rate_limit: rateLimit })
+    emit('delta', { text: 'hello' })
+    return { intent: MOCK_INTENT, data: MOCK_DATA, fullAnswer: 'hello' }
+  })
 })
 
 describe('abuse protection', () => {
@@ -118,7 +127,6 @@ describe('abuse protection', () => {
     expect(res.status).toBe(429)
     const body = await res.json()
     expect(body.rate_limit.tier).toBe('ip')
-    // IP check now runs for all requests
     expect(mockCheckIpLimit).toHaveBeenCalled()
   })
 
@@ -145,19 +153,11 @@ describe('abuse protection', () => {
     expect(res.status).toBe(503)
   })
 
-  it('IP limit and circuit breaker fire before handleQueryStream', async () => {
+  it('IP limit and circuit breaker fire before streamPipeline', async () => {
     const sb = mockSupabaseWithUser(null)
     mockCreateClient.mockResolvedValue(sb)
     mockCheckCircuitBreaker.mockResolvedValue(true)
     mockCheckIpLimit.mockReturnValue({ allowed: true })
-
-    const { handleQueryStream } = await import('@/query/index')
-    const mockStream = (async function* () { yield 'hello' })()
-    ;(handleQueryStream as ReturnType<typeof vi.fn>).mockResolvedValue({
-      intent: { type: 'meta' },
-      data: {},
-      stream: mockStream,
-    })
 
     await POST(makeRequest({ query: 'test' }))
 
@@ -191,7 +191,6 @@ describe('abuse protection', () => {
   it('too many messages → 400', async () => {
     const sb = mockSupabaseWithUser(null)
     mockCreateClient.mockResolvedValue(sb)
-    // Don't even need circuit breaker mock — should fail before that
 
     const messages = Array.from({ length: 51 }, () => ({ role: 'user', content: 'x' }))
     const res = await POST(makeRequest({ query: 'test', messages }))
@@ -209,6 +208,6 @@ describe('abuse protection', () => {
     await POST(makeRequest({ query: 'test' }, { 'x-forwarded-for': '10.0.0.1, 192.168.1.1' }))
 
     expect(mockGetClientIp).toHaveBeenCalled()
-    expect(mockCheckIpLimit).toHaveBeenCalledWith('127.0.0.1') // mock returns 127.0.0.1
+    expect(mockCheckIpLimit).toHaveBeenCalledWith('127.0.0.1')
   })
 })
