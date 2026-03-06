@@ -177,7 +177,9 @@ export async function retrieveContext(intent: Intent, trace?: Trace): Promise<Re
     ])),
   ])
 
-  return { format: intent.format, window_days, tournaments_count, top_decks: topDecks, card_info: cardInfo, card_glossary: cardGlossary, article_chunks: articleChunks, confidence }
+  const selectedDecks = selectDecksForLLM(topDecks)
+
+  return { format: intent.format, window_days, tournaments_count, top_decks: selectedDecks, card_info: cardInfo, card_glossary: cardGlossary, article_chunks: articleChunks, confidence }
 }
 
 // Pull the best confidence from metagame_snapshots for this format/window.
@@ -308,6 +310,90 @@ async function fetchTopDecks(
   }
 
   return decks
+}
+
+const TIER_RANK: Record<string, number> = {
+  pro_tour: 0,
+  challenge: 1,
+  rcq: 2,
+  regional: 2,
+  preliminary: 3,
+}
+const MAX_LLM_DECKS = 30
+
+function tierScore(tier: string | null): number {
+  return tier ? (TIER_RANK[tier] ?? 4) : 4
+}
+
+/**
+ * Select a representative subset of decks for the LLM prompt.
+ *
+ * 1. Sort all decks by tier quality, then recency, then placement.
+ * 2. Group by archetype and allocate slots proportional to meta share,
+ *    guaranteeing at least 1 slot per archetype.
+ * 3. Within each archetype, pick the best decks (already sorted).
+ */
+function selectDecksForLLM(decks: DeckSummary[], limit = MAX_LLM_DECKS): DeckSummary[] {
+  if (decks.length <= limit) return decks
+
+  // Sort: best tier → most recent → best placement
+  const sorted = [...decks].sort((a, b) =>
+    tierScore(a.tier) - tierScore(b.tier) ||
+    b.tournament_date.localeCompare(a.tournament_date) ||
+    (a.placement ?? 999) - (b.placement ?? 999)
+  )
+
+  // Group by archetype (null → "Unknown")
+  const groups = new Map<string, DeckSummary[]>()
+  for (const deck of sorted) {
+    const key = deck.archetype ?? 'Unknown'
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(deck)
+  }
+
+  // Allocate slots proportional to group size, min 1 per archetype
+  const total = sorted.length
+  const selected: DeckSummary[] = []
+  const remaining: Array<{ key: string; decks: DeckSummary[] }> = []
+
+  for (const [key, groupDecks] of groups) {
+    const share = groupDecks.length / total
+    const slots = Math.max(1, Math.round(share * limit))
+    selected.push(...groupDecks.slice(0, slots))
+    if (groupDecks.length > slots) {
+      remaining.push({ key, decks: groupDecks.slice(slots) })
+    }
+  }
+
+  // If over limit, trim the smallest archetypes back to 1
+  if (selected.length > limit) {
+    // Re-do with strict min-1 then fill
+    selected.length = 0
+    const guaranteed: DeckSummary[] = []
+    const overflow: DeckSummary[] = []
+    for (const [, groupDecks] of groups) {
+      guaranteed.push(groupDecks[0]!)
+      overflow.push(...groupDecks.slice(1))
+    }
+    // Sort overflow by quality
+    overflow.sort((a, b) =>
+      tierScore(a.tier) - tierScore(b.tier) ||
+      b.tournament_date.localeCompare(a.tournament_date) ||
+      (a.placement ?? 999) - (b.placement ?? 999)
+    )
+    selected.push(...guaranteed)
+    const fillSlots = limit - guaranteed.length
+    if (fillSlots > 0) selected.push(...overflow.slice(0, fillSlots))
+  }
+
+  // If under limit, fill remaining slots from leftover decks
+  if (selected.length < limit) {
+    const selectedSet = new Set(selected)
+    const fill = sorted.filter(d => !selectedSet.has(d))
+    selected.push(...fill.slice(0, limit - selected.length))
+  }
+
+  return selected
 }
 
 async function lookupPrices(names: string[]): Promise<{ name: string; usd: number | null; tix: number | null }[]> {
