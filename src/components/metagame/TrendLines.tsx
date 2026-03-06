@@ -6,12 +6,12 @@ import type { TrendPoint } from '@/app/data/[format]/queries'
 
 const PALETTE = [
   '#4F8EF7',
-  'rgba(79,142,247,0.8)',
-  'rgba(79,142,247,0.65)',
-  'rgba(79,142,247,0.5)',
   '#C9A050',
-  '#B87333',
   '#D4552A',
+  '#50B87A',
+  '#B87333',
+  '#A45CDB',
+  '#E05F8A',
   '#4A5878',
 ]
 
@@ -71,9 +71,9 @@ export function TrendLines({ data, format }: { data: TrendPoint[]; format: strin
           <YAxis tickFormatter={v => `${v}%`} tick={{ fill: '#4A5878', fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend
-            wrapperStyle={{ fontSize: 11, color: '#E4EEFF' }}
+            wrapperStyle={{ fontSize: 11 }}
             content={({ payload }) => (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-2">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-2 text-ink">
                 {payload?.map(entry => {
                   const id = nameToId.get(entry.value as string)
                   return (
