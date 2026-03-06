@@ -17,7 +17,11 @@
 {"issue_id":"mindsculptor-3w3.3","label":"backend"}
 {"issue_id":"mindsculptor-3w3.3","label":"data"}
 {"issue_id":"mindsculptor-3w3.3","label":"frontend"}
+{"issue_id":"mindsculptor-3x6","label":"accuracy"}
+{"issue_id":"mindsculptor-3x6","label":"backend"}
 {"issue_id":"mindsculptor-4ao","label":"design"}
+{"issue_id":"mindsculptor-4ma","label":"backend"}
+{"issue_id":"mindsculptor-4ma","label":"security"}
 {"issue_id":"mindsculptor-4mm","label":"design"}
 {"issue_id":"mindsculptor-4vh","label":"ux"}
 {"issue_id":"mindsculptor-4zs","label":"design"}
@@ -30,12 +34,16 @@
 {"issue_id":"mindsculptor-803","label":"data"}
 {"issue_id":"mindsculptor-8nq","label":"backend"}
 {"issue_id":"mindsculptor-8nq","label":"security"}
+{"issue_id":"mindsculptor-8wh","label":"backend"}
+{"issue_id":"mindsculptor-8wh","label":"security"}
 {"issue_id":"mindsculptor-9ej","label":"bug"}
 {"issue_id":"mindsculptor-9jc","label":"articles"}
 {"issue_id":"mindsculptor-9jc","label":"data-pipeline"}
 {"issue_id":"mindsculptor-9jc","label":"phase-2"}
 {"issue_id":"mindsculptor-agd","label":"backend"}
 {"issue_id":"mindsculptor-agd","label":"frontend"}
+{"issue_id":"mindsculptor-aku","label":"backend"}
+{"issue_id":"mindsculptor-aku","label":"security"}
 {"issue_id":"mindsculptor-ali","label":"backend"}
 {"issue_id":"mindsculptor-ali","label":"infra"}
 {"issue_id":"mindsculptor-bg2","label":"data"}
@@ -52,6 +60,9 @@
 {"issue_id":"mindsculptor-fad","label":"design"}
 {"issue_id":"mindsculptor-i02","label":"design"}
 {"issue_id":"mindsculptor-lfv","label":"blocked-by:mindsculptor-97q"}
+{"issue_id":"mindsculptor-mqt","label":"backend"}
+{"issue_id":"mindsculptor-mqt","label":"frontend"}
+{"issue_id":"mindsculptor-mqt","label":"ux"}
 {"issue_id":"mindsculptor-nzl","label":"backend"}
 {"issue_id":"mindsculptor-se2","label":"design"}
 {"issue_id":"mindsculptor-skw","label":"backend"}
@@ -77,5 +88,7 @@
 {"issue_id":"mindsculptor-usx","label":"frontend"}
 {"issue_id":"mindsculptor-v2t","label":"backend"}
 {"issue_id":"mindsculptor-v2t","label":"data"}
+{"issue_id":"mindsculptor-vmq","label":"infra"}
+{"issue_id":"mindsculptor-vmq","label":"security"}
 {"issue_id":"mindsculptor-vos","label":"backend"}
 {"issue_id":"mindsculptor-vos","label":"ux"}
