@@ -2,7 +2,7 @@
 
 A Magic: The Gathering metagame oracle. Ask it anything — from "what should I play this weekend?" to "build me the best Modern deck from the last 3 months" — and get answers backed by real tournament data.
 
-Try it out at [https://firemind.gg](https://firemind.gg)
+Try it out at [firemind.gg](https://firemind.gg)
 
 ## How It Works
 
