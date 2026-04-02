@@ -2,8 +2,6 @@
 
 A Magic: The Gathering metagame oracle. Ask it anything — from "what should I play this weekend?" to "build me the best Modern deck from the last 3 months" — and get answers backed by real tournament data.
 
-Try it out at [firemind.gg](https://firemind.gg)
-
 ## How It Works
 
 Firemind scrapes tournament results from across the competitive Magic landscape — **MTGO**, **MTGGoldfish**, **MTGTop8** — and syncs the full card database from **Scryfall**. Every 12 hours, **Render** cron jobs kick off a scrape pipeline that fetches new events, parses decklists, and stores everything in a **Supabase** Postgres database powered by **pgvector** for vector search.
